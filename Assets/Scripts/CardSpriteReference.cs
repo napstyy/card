@@ -6,6 +6,8 @@ public class CardSpriteReference : MonoBehaviour {
     [SerializeField] Sprite[] diamonds;
     [SerializeField] Sprite[] clubs;
 
+    [SerializeField] Sprite cardBack;
+
     public static CardSpriteReference Instance;
 
     private void Awake() {
@@ -42,5 +44,10 @@ public class CardSpriteReference : MonoBehaviour {
         }
 
         return sprite;
+    }
+
+    public Sprite GetCardBack()
+    {
+        return cardBack;
     }
 }
