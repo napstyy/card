@@ -19,4 +19,12 @@ public class HandsContainer : MonoBehaviour {
                 card.ShowCard();
         }
     }
+
+    public void ClearHands()
+    {
+        foreach(Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+    }
 }
