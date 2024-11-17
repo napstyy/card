@@ -9,38 +9,31 @@ public class BlackjackController : MonoBehaviour
     public bool isDoubleDown;
     public GameObject cardPrefab;
     public TextMeshProUGUI playerPointsText;
-    public HandsContainer playerHandsContainer;
-    public HandsContainer dealerHandsContainer;
+    public Hands playerHands;
+    public Hands dealerHands;
+    public Hands selectedHands;
 
     List<Card> deck;
     List<Card> removedCards;
 
-    List<Card> playerHands;
-    List<Card> dealerHands;
-
-    int selectedCardIndex;
-
     // Start is called before the first frame update
     void Start()
     {
-        selectedCardIndex = -1;
         removedCards = new List<Card>();
-        playerHands = new List<Card>();
-        dealerHands = new List<Card>();
         StartOfRound();
     }
 
     void StartOfRound()
     {
-        playerHands.Clear();
-        dealerHands.Clear();
+        playerHands.InitializeHands();
+        dealerHands.InitializeHands();
         deck = InitializeDeck();
-        AddCard(playerHands);
-        AddCard(dealerHands);
-        AddCard(playerHands);
-        AddCard(dealerHands);
+        playerHands.AddCardToHands(DrawCard());
+        dealerHands.AddCardToHands(DrawCard());
+        playerHands.AddCardToHands(DrawCard());
+        dealerHands.AddCardToHands(DrawCard());
 
-        int playerPoints = CountPoints(playerHands);
+        int playerPoints = CountPoints(playerHands.cards);
         playerPointsText.SetText(playerPoints.ToString());
     }
 
@@ -67,22 +60,6 @@ public class BlackjackController : MonoBehaviour
         deck.Remove(card);
         removedCards.Add(card);
         return card;
-    }
-
-    void AddCard(List<Card> hands)
-    {
-        bool isDealer = hands == dealerHands;
-        Card card = DrawCard();
-        HandsContainer handsContainer = isDealer? dealerHandsContainer : playerHandsContainer;
-        GameObject cardObject = Instantiate(cardPrefab, handsContainer.transform);
-        DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
-        if(!isDealer){ 
-            int index = playerHands.Count;
-            displayCard.OnCardClicked += ()=> selectedCardIndex = index;
-        }
-        displayCard.Instantiate(card);
-        hands.Add(card);
-        handsContainer.UpdateHands();
     }
 
     int GetCardPoint(Card card)
@@ -121,38 +98,34 @@ public class BlackjackController : MonoBehaviour
 
     public void Stand()
     {
-        int dealerPoints = CountPoints(dealerHands);
-        dealerHandsContainer.hideFirstCard = false;
-        dealerHandsContainer.UpdateHands();
+        int dealerPoints = CountPoints(dealerHands.cards);
+        dealerHands.ShowHands();
         while(dealerPoints < 17)
         {
-            AddCard(dealerHands);
-            dealerPoints = CountPoints(dealerHands);
+            dealerHands.AddCardToHands(DrawCard());
+            dealerPoints = CountPoints(dealerHands.cards);
         }
-        int playerPoints = CountPoints(playerHands);
+        int playerPoints = CountPoints(playerHands.cards);
         string gameResult = playerPoints < dealerPoints? "Dealer Win!":playerPoints > dealerPoints? "Player Win!":"Tie";
         Debug.Log(gameResult+$" Dealer: {dealerPoints} | Player: {playerPoints}");
     }
 
     public void Replace()
     {
-        if(selectedCardIndex >= 0 && selectedCardIndex < playerHands.Count)
+        List<Card> cards = selectedHands.cards;
+        if(selectedHands.ReplaceCard(DrawCard(), out Card replacedCard))
         {
-            removedCards.Add(playerHands[selectedCardIndex]);
-            playerHands[selectedCardIndex] = DrawCard();
-            playerHandsContainer.transform.GetChild(selectedCardIndex).GetComponent<DisplayCard>().Instantiate(playerHands[selectedCardIndex]);
-            playerHandsContainer.UpdateHands();
-
-            int playerPoints = CountPoints(playerHands);
+            removedCards.Add(replacedCard);
+            int playerPoints = CountPoints(cards);
             playerPointsText.SetText(playerPoints.ToString());
         }
     }
 
     public void Hit()
     {
-        if(CountPoints(playerHands) > 21) return;
-        AddCard(playerHands);
-        int playerPoints = CountPoints(playerHands);
+        if(CountPoints(playerHands.cards) > 21) return;
+        playerHands.AddCardToHands(DrawCard());
+        int playerPoints = CountPoints(playerHands.cards);
         playerPointsText.SetText(playerPoints.ToString());
         if(playerPoints > 21) Debug.Log("Player Busted");
     }
@@ -166,8 +139,8 @@ public class BlackjackController : MonoBehaviour
     {
         this.chips *= 2;
         isDoubleDown = true;
-        AddCard(playerHands);
-        int playerPoints = CountPoints(playerHands);
+        playerHands.AddCardToHands(DrawCard());
+        int playerPoints = CountPoints(playerHands.cards);
         playerPointsText.SetText(playerPoints.ToString());
         if(playerPoints > 21) Debug.Log("Player Busted");
         Stand();
@@ -194,8 +167,8 @@ public class BlackjackController : MonoBehaviour
 
     public void Restart()
     {
-        playerHandsContainer.ClearHands();
-        dealerHandsContainer.ClearHands();
+        playerHands.InitializeHands();
+        dealerHands.InitializeHands();
         StartOfRound();
     }
 }

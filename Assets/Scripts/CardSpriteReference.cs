@@ -9,6 +9,7 @@ public class CardSpriteReference : MonoBehaviour {
     [SerializeField] Sprite cardBack;
 
     public static CardSpriteReference Instance;
+    public GameObject cardPrefab;
 
     private void Awake() {
         if(Instance == null)

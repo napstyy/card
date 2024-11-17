@@ -298,10 +298,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 119045965}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c1b03112705d9347b855e8ed0a53b50, type: 3}
+  m_Script: {fileID: 11500000, guid: 5842b1853d087dc4ea4f0c8f1db401f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hideFirstCard: 0
+  role: 1
   spacing: 1
 --- !u!1 &298028779
 GameObject:
@@ -344,10 +344,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 298028779}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c1b03112705d9347b855e8ed0a53b50, type: 3}
+  m_Script: {fileID: 11500000, guid: 5842b1853d087dc4ea4f0c8f1db401f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hideFirstCard: 1
+  role: 0
   spacing: 1
 --- !u!1 &434043188
 GameObject:
@@ -1897,8 +1897,9 @@ MonoBehaviour:
   isDoubleDown: 0
   cardPrefab: {fileID: 4625361850451234607, guid: e1dbada0aefe143838a9addcf7a28334, type: 3}
   playerPointsText: {fileID: 813117297}
-  playerHandsContainer: {fileID: 119045967}
-  dealerHandsContainer: {fileID: 298028781}
+  playerHands: {fileID: 119045967}
+  dealerHands: {fileID: 298028781}
+  selectedHands: {fileID: 0}
 --- !u!4 &1789771424
 Transform:
   m_ObjectHideFlags: 0
@@ -1983,6 +1984,7 @@ MonoBehaviour:
   - {fileID: -798178033, guid: fde360b0dc6854d37b6a27c0399a6cbd, type: 3}
   - {fileID: 399522069, guid: fde360b0dc6854d37b6a27c0399a6cbd, type: 3}
   cardBack: {fileID: -1820821038, guid: d632aa0a8d27145ef912adb42035e20e, type: 3}
+  cardPrefab: {fileID: 4625361850451234607, guid: e1dbada0aefe143838a9addcf7a28334, type: 3}
 --- !u!1 &2096036597
 GameObject:
   m_ObjectHideFlags: 0
