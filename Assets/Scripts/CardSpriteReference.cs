@@ -11,7 +11,8 @@ namespace CardGame
 
         [SerializeField] Sprite cardBack;
 
-        public static CardSpriteReference Instance;
+    public static CardSpriteReference Instance;
+    public GameObject cardPrefab;
 
         private void Awake()
         {

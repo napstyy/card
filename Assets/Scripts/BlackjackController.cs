@@ -1,52 +1,41 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
-namespace CardGame
+public class BlackjackController : MonoBehaviour
 {
-    public class BlackjackController : MonoBehaviour
+    public int chips;
+    public bool isDoubleDown;
+    public GameObject cardPrefab;
+    public TextMeshProUGUI playerPointsText;
+    public Hands playerHands;
+    public Hands dealerHands;
+    public Hands selectedHands;
+
+    List<Card> deck;
+    List<Card> removedCards;
+
+    // Start is called before the first frame update
+    void Start()
     {
-        public enum Position
-        {
-            Player,
-            Dealer
-        }
+        removedCards = new List<Card>();
+        StartOfRound();
+    }
 
-        public int chips;
-        public bool isDoubleDown;
-        public GameObject cardPrefab;
-        public TextMeshProUGUI playerPointsText;
-        public HandsContainer playerHandsContainer;
-        public HandsContainer dealerHandsContainer;
+    void StartOfRound()
+    {
+        playerHands.InitializeHands();
+        dealerHands.InitializeHands();
+        deck = InitializeDeck();
+        playerHands.AddCardToHands(DrawCard());
+        dealerHands.AddCardToHands(DrawCard());
+        playerHands.AddCardToHands(DrawCard());
+        dealerHands.AddCardToHands(DrawCard());
 
-        List<Card> deck;
-        List<Card> removedCards;
-
-        List<Card> playerHands;
-        List<Card> dealerHands;
-
-        // Start is called before the first frame update
-        void Start()
-        {
-            removedCards = new List<Card>();
-            playerHands = new List<Card>();
-            dealerHands = new List<Card>();
-            deck = InitializeDeck();
-            StartOfRound();
-        }
-
-        void StartOfRound()
-        {
-            playerHands.Clear();
-            dealerHands.Clear();
-            playerHands.Add(DrawCard(Position.Player));
-            dealerHands.Add(DrawCard(Position.Dealer));
-            playerHands.Add(DrawCard(Position.Player));
-            dealerHands.Add(DrawCard(Position.Dealer));
-
-            int playerPoints = CountPoints(playerHands);
-            playerPointsText.SetText(playerPoints.ToString());
-        }
+        int playerPoints = CountPoints(playerHands.cards);
+        playerPointsText.SetText(playerPoints.ToString());
+    }
 
         List<Card> InitializeDeck(int numberOfDecks = 1)
         {
@@ -65,19 +54,14 @@ namespace CardGame
             return deck;
         }
 
-        Card DrawCard(Position position)
-        {
-            int rnd = Random.Range(0, deck.Count);
-            Card card = deck[rnd];
-            deck.Remove(card);
-            removedCards.Add(card);
-            HandsContainer hands = position == Position.Dealer ? dealerHandsContainer : playerHandsContainer;
-            GameObject cardObject = Instantiate(cardPrefab, hands.transform);
-            DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
-            displayCard.Instantiate(card);
-            hands.UpdateHands();
-            return card;
-        }
+    Card DrawCard()
+    {
+        int rnd = Random.Range(0, deck.Count);
+        Card card = deck[rnd];
+        deck.Remove(card);
+        removedCards.Add(card);
+        return card;
+    }
 
         int GetCardPoint(Card card)
         {
@@ -113,55 +97,55 @@ namespace CardGame
             return point;
         }
 
-        public void Stand()
+    public void Stand()
+    {
+        int dealerPoints = CountPoints(dealerHands.cards);
+        dealerHands.ShowHands();
+        while(dealerPoints < 17)
         {
-            int dealerPoints = CountPoints(dealerHands);
-            dealerHandsContainer.hideFirstCard = false;
-            dealerHandsContainer.UpdateHands();
-            while (dealerPoints < 17)
-            {
-                dealerHands.Add(DrawCard(Position.Dealer));
-                dealerPoints = CountPoints(dealerHands);
-            }
-            int playerPoints = CountPoints(playerHands);
-            string gameResult = playerPoints < dealerPoints ? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
-            Debug.Log(gameResult + $" Dealer: {dealerPoints} | Player: {playerPoints}");
+            dealerHands.AddCardToHands(DrawCard());
+            dealerPoints = CountPoints(dealerHands.cards);
         }
+        int playerPoints = CountPoints(playerHands.cards);
+        string gameResult = playerPoints < dealerPoints? "Dealer Win!":playerPoints > dealerPoints? "Player Win!":"Tie";
+        Debug.Log(gameResult+$" Dealer: {dealerPoints} | Player: {playerPoints}");
+    }
 
-        public void Replace(int index)
+    public void Replace()
+    {
+        List<Card> cards = selectedHands?.cards;
+        if(selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
         {
-            if (index > 0 && index < playerHands.Count)
-            {
-                removedCards.Add(playerHands[index]);
-                playerHands[index] = DrawCard(Position.Player);
-                playerHandsContainer.UpdateHands();
-            }
-        }
-
-        public void Hit()
-        {
-            if (CountPoints(playerHands) > 21) return;
-            playerHands.Add(DrawCard(Position.Player));
-            int playerPoints = CountPoints(playerHands);
+            removedCards.Add(replacedCard);
+            int playerPoints = CountPoints(cards);
             playerPointsText.SetText(playerPoints.ToString());
-            if (playerPoints > 21) Debug.Log("Player Busted");
         }
+    }
+
+    public void Hit()
+    {
+        if(CountPoints(playerHands.cards) > 21) return;
+        playerHands.AddCardToHands(DrawCard());
+        int playerPoints = CountPoints(playerHands.cards);
+        playerPointsText.SetText(playerPoints.ToString());
+        if(playerPoints > 21) Debug.Log("Player Busted");
+    }
 
         public void Bet(int chips)
         {
             this.chips += chips;
         }
 
-        public void DoubleDown()
-        {
-            this.chips *= 2;
-            isDoubleDown = true;
-            playerHands.Add(DrawCard(Position.Player));
-            int playerPoints = CountPoints(playerHands);
-            playerPointsText.SetText(playerPoints.ToString());
-            if (playerPoints > 21) Debug.Log("Player Busted");
-            Stand();
-        }
+    public void DoubleDown()
+    {
+        this.chips *= 2;
+        isDoubleDown = true;
+        playerHands.AddCardToHands(DrawCard());
+        int playerPoints = CountPoints(playerHands.cards);
+        playerPointsText.SetText(playerPoints.ToString());
+        if(playerPoints > 21) Debug.Log("Player Busted");
+        Stand();
+    }
 
         public int CountPoints(List<Card> hands)
         {
@@ -179,7 +163,13 @@ namespace CardGame
                 points -= 10;
             }
 
-            return points;
-        }
+        return points;
+    }
+
+    public void Restart()
+    {
+        playerHands.InitializeHands();
+        dealerHands.InitializeHands();
+        StartOfRound();
     }
 }

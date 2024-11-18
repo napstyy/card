@@ -50,4 +50,8 @@ namespace CardGame
             }
         }
     }
+
+    private void OnDisable() {
+        OnCardClicked = null;
+    }
 }
