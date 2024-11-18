@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace CardGame
@@ -18,11 +17,12 @@ namespace CardGame
         List<Card> deck;
         List<Card> removedCards;
 
+        SimpleUIController simpleUIController;
         // Start is called before the first frame update
         void Start()
         {
             removedCards = new List<Card>();
-            StartOfRound();
+            simpleUIController = FindAnyObjectByType<SimpleUIController>();
         }
 
         void StartOfRound()
@@ -101,6 +101,7 @@ namespace CardGame
 
         public void Stand()
         {
+            if(chips <= 0)return;
             int dealerPoints = CountPoints(dealerHands.cards);
             dealerHands.ShowHands();
             while (dealerPoints < 17)
@@ -109,12 +110,26 @@ namespace CardGame
                 dealerPoints = CountPoints(dealerHands.cards);
             }
             int playerPoints = CountPoints(playerHands.cards);
-            string gameResult = playerPoints < dealerPoints ? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
+
+            if(playerPoints <= 21)
+            {
+                if(dealerPoints > 21 || playerPoints > dealerPoints)
+                {
+                    FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + chips * 2);
+                }
+                else if(playerPoints == dealerPoints)
+                {
+                    FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + chips);
+                }
+            }
+            chips = 0;
+            string gameResult = dealerPoints > 21 ? "Player Win!" : playerPoints < dealerPoints || playerPoints > 21? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
             Debug.Log(gameResult + $" Dealer: {dealerPoints} | Player: {playerPoints}");
         }
 
         public void Replace()
         {
+            if(chips <= 0)return;
             List<Card> cards = selectedHands?.cards;
             if (selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
             {
@@ -126,20 +141,29 @@ namespace CardGame
 
         public void Hit()
         {
-            if (CountPoints(playerHands.cards) > 21) return;
+            if (CountPoints(playerHands?.cards) > 21 || chips <= 0) return;
             playerHands.AddCardToHands(DrawCard());
             int playerPoints = CountPoints(playerHands.cards);
             playerPointsText.SetText(playerPoints.ToString());
-            if (playerPoints > 21) Debug.Log("Player Busted");
+            if (playerPoints > 21) {
+                Debug.Log("Player Busted");
+                Stand();
+            }
         }
 
         public void Bet(int chips)
         {
+            if(chips > FindAnyObjectByType<Test>().ownedChips)return;
             this.chips += chips;
+            FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
+            StartOfRound();
+            simpleUIController.HideBetsButtons();
         }
 
         public void DoubleDown()
         {
+            if(FindAnyObjectByType<Test>().ownedChips < chips || chips <= 0)return;
+            FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
             this.chips *= 2;
             isDoubleDown = true;
             playerHands.AddCardToHands(DrawCard());
@@ -172,7 +196,7 @@ namespace CardGame
         {
             playerHands.InitializeHands();
             dealerHands.InitializeHands();
-            StartOfRound();
+            simpleUIController.ShowBetsButtons();
         }
     }
 }

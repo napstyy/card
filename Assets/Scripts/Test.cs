@@ -1,18 +1,21 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Test : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public event Action<int> OnChipsUpdate;
+    public int ownedChips;
+
     void Start()
     {
-        
+        UpdateChips(ownedChips);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void UpdateChips(int newValue)
     {
-        
+        ownedChips= newValue;
+        OnChipsUpdate?.Invoke(newValue);
     }
 }
