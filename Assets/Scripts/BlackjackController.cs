@@ -112,8 +112,8 @@ public class BlackjackController : MonoBehaviour
 
     public void Replace()
     {
-        List<Card> cards = selectedHands.cards;
-        if(selectedHands.ReplaceCard(DrawCard(), out Card replacedCard))
+        List<Card> cards = selectedHands?.cards;
+        if(selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
         {
             removedCards.Add(replacedCard);
             int playerPoints = CountPoints(cards);

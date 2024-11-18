@@ -10,7 +10,6 @@ public class Hands : MonoBehaviour {
     }
     
     public List<Card> cards{get; private set;}
-
     public Role role;
     public float spacing = 1;
     int selectedCardIndex;
@@ -24,9 +23,10 @@ public class Hands : MonoBehaviour {
 
     public void InitializeHands()
     {
-        foreach(Transform child in transform)
+        while (transform.childCount > 0)
         {
-            Destroy(child.gameObject);
+            var child = transform.GetChild(transform.childCount-1);
+            ObjectPool.instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, child.gameObject);
         }
         hideFirstCard = role == Role.Dealer;
         selectedCardIndex = -1;
@@ -36,7 +36,7 @@ public class Hands : MonoBehaviour {
 
     public void AddCardToHands(Card card)
     {
-        GameObject cardObject = Instantiate(CardSpriteReference.Instance.cardPrefab, transform);
+        GameObject cardObject = ObjectPool.instance.GetObject(CardSpriteReference.Instance.cardPrefab,transform);
         DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
         if(role == Role.Player){ 
             int index = cards.Count;

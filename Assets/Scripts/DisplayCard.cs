@@ -46,4 +46,8 @@ public class DisplayCard : MonoBehaviour {
             }
         }
     }
+
+    private void OnDisable() {
+        OnCardClicked = null;
+    }
 }
