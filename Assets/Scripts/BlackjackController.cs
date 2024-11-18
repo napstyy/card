@@ -3,39 +3,41 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class BlackjackController : MonoBehaviour
+namespace CardGame
 {
-    public int chips;
-    public bool isDoubleDown;
-    public GameObject cardPrefab;
-    public TextMeshProUGUI playerPointsText;
-    public Hands playerHands;
-    public Hands dealerHands;
-    public Hands selectedHands;
-
-    List<Card> deck;
-    List<Card> removedCards;
-
-    // Start is called before the first frame update
-    void Start()
+    public class BlackjackController : MonoBehaviour
     {
-        removedCards = new List<Card>();
-        StartOfRound();
-    }
+        public int chips;
+        public bool isDoubleDown;
+        public GameObject cardPrefab;
+        public TextMeshProUGUI playerPointsText;
+        public Hands playerHands;
+        public Hands dealerHands;
+        public Hands selectedHands;
 
-    void StartOfRound()
-    {
-        playerHands.InitializeHands();
-        dealerHands.InitializeHands();
-        deck = InitializeDeck();
-        playerHands.AddCardToHands(DrawCard());
-        dealerHands.AddCardToHands(DrawCard());
-        playerHands.AddCardToHands(DrawCard());
-        dealerHands.AddCardToHands(DrawCard());
+        List<Card> deck;
+        List<Card> removedCards;
 
-        int playerPoints = CountPoints(playerHands.cards);
-        playerPointsText.SetText(playerPoints.ToString());
-    }
+        // Start is called before the first frame update
+        void Start()
+        {
+            removedCards = new List<Card>();
+            StartOfRound();
+        }
+
+        void StartOfRound()
+        {
+            playerHands.InitializeHands();
+            dealerHands.InitializeHands();
+            deck = InitializeDeck();
+            playerHands.AddCardToHands(DrawCard());
+            dealerHands.AddCardToHands(DrawCard());
+            playerHands.AddCardToHands(DrawCard());
+            dealerHands.AddCardToHands(DrawCard());
+
+            int playerPoints = CountPoints(playerHands.cards);
+            playerPointsText.SetText(playerPoints.ToString());
+        }
 
         List<Card> InitializeDeck(int numberOfDecks = 1)
         {
@@ -54,14 +56,14 @@ public class BlackjackController : MonoBehaviour
             return deck;
         }
 
-    Card DrawCard()
-    {
-        int rnd = Random.Range(0, deck.Count);
-        Card card = deck[rnd];
-        deck.Remove(card);
-        removedCards.Add(card);
-        return card;
-    }
+        Card DrawCard()
+        {
+            int rnd = Random.Range(0, deck.Count);
+            Card card = deck[rnd];
+            deck.Remove(card);
+            removedCards.Add(card);
+            return card;
+        }
 
         int GetCardPoint(Card card)
         {
@@ -97,55 +99,55 @@ public class BlackjackController : MonoBehaviour
             return point;
         }
 
-    public void Stand()
-    {
-        int dealerPoints = CountPoints(dealerHands.cards);
-        dealerHands.ShowHands();
-        while(dealerPoints < 17)
+        public void Stand()
         {
-            dealerHands.AddCardToHands(DrawCard());
-            dealerPoints = CountPoints(dealerHands.cards);
+            int dealerPoints = CountPoints(dealerHands.cards);
+            dealerHands.ShowHands();
+            while (dealerPoints < 17)
+            {
+                dealerHands.AddCardToHands(DrawCard());
+                dealerPoints = CountPoints(dealerHands.cards);
+            }
+            int playerPoints = CountPoints(playerHands.cards);
+            string gameResult = playerPoints < dealerPoints ? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
+            Debug.Log(gameResult + $" Dealer: {dealerPoints} | Player: {playerPoints}");
         }
-        int playerPoints = CountPoints(playerHands.cards);
-        string gameResult = playerPoints < dealerPoints? "Dealer Win!":playerPoints > dealerPoints? "Player Win!":"Tie";
-        Debug.Log(gameResult+$" Dealer: {dealerPoints} | Player: {playerPoints}");
-    }
 
-    public void Replace()
-    {
-        List<Card> cards = selectedHands?.cards;
-        if(selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
+        public void Replace()
         {
-            removedCards.Add(replacedCard);
-            int playerPoints = CountPoints(cards);
+            List<Card> cards = selectedHands?.cards;
+            if (selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
+            {
+                removedCards.Add(replacedCard);
+                int playerPoints = CountPoints(cards);
+                playerPointsText.SetText(playerPoints.ToString());
+            }
+        }
+
+        public void Hit()
+        {
+            if (CountPoints(playerHands.cards) > 21) return;
+            playerHands.AddCardToHands(DrawCard());
+            int playerPoints = CountPoints(playerHands.cards);
             playerPointsText.SetText(playerPoints.ToString());
+            if (playerPoints > 21) Debug.Log("Player Busted");
         }
-    }
-
-    public void Hit()
-    {
-        if(CountPoints(playerHands.cards) > 21) return;
-        playerHands.AddCardToHands(DrawCard());
-        int playerPoints = CountPoints(playerHands.cards);
-        playerPointsText.SetText(playerPoints.ToString());
-        if(playerPoints > 21) Debug.Log("Player Busted");
-    }
 
         public void Bet(int chips)
         {
             this.chips += chips;
         }
 
-    public void DoubleDown()
-    {
-        this.chips *= 2;
-        isDoubleDown = true;
-        playerHands.AddCardToHands(DrawCard());
-        int playerPoints = CountPoints(playerHands.cards);
-        playerPointsText.SetText(playerPoints.ToString());
-        if(playerPoints > 21) Debug.Log("Player Busted");
-        Stand();
-    }
+        public void DoubleDown()
+        {
+            this.chips *= 2;
+            isDoubleDown = true;
+            playerHands.AddCardToHands(DrawCard());
+            int playerPoints = CountPoints(playerHands.cards);
+            playerPointsText.SetText(playerPoints.ToString());
+            if (playerPoints > 21) Debug.Log("Player Busted");
+            Stand();
+        }
 
         public int CountPoints(List<Card> hands)
         {
@@ -163,13 +165,14 @@ public class BlackjackController : MonoBehaviour
                 points -= 10;
             }
 
-        return points;
-    }
+            return points;
+        }
 
-    public void Restart()
-    {
-        playerHands.InitializeHands();
-        dealerHands.InitializeHands();
-        StartOfRound();
+        public void Restart()
+        {
+            playerHands.InitializeHands();
+            dealerHands.InitializeHands();
+            StartOfRound();
+        }
     }
 }
