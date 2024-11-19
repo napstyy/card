@@ -18,6 +18,10 @@ namespace CardGame
         List<Card> removedCards;
 
         SimpleUIController simpleUIController;
+
+        [Header("Audio Clips")]
+        [SerializeField] public AudioClip carddrop;
+
         // Start is called before the first frame update
         void Start()
         {
@@ -141,6 +145,7 @@ namespace CardGame
                 playerPointsText.SetText(playerPoints.ToString());
             }
             playerHands.ResetSelectedCard(false);
+            AudioManager.Instance.PlaySFX(carddrop);
         }
 
         public void Hit()
