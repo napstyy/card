@@ -102,6 +102,7 @@ namespace CardGame
         public void Stand()
         {
             if(chips <= 0)return;
+            playerHands.ResetSelectedCard();
             int dealerPoints = CountPoints(dealerHands.cards);
             dealerHands.ShowHands();
             while (dealerPoints < 17)
@@ -137,11 +138,13 @@ namespace CardGame
                 int playerPoints = CountPoints(cards);
                 playerPointsText.SetText(playerPoints.ToString());
             }
+            playerHands.ResetSelectedCard(false);
         }
 
         public void Hit()
         {
             if (CountPoints(playerHands?.cards) > 21 || chips <= 0) return;
+            playerHands.ResetSelectedCard();
             playerHands.AddCardToHands(DrawCard());
             int playerPoints = CountPoints(playerHands.cards);
             playerPointsText.SetText(playerPoints.ToString());
@@ -163,6 +166,7 @@ namespace CardGame
         public void DoubleDown()
         {
             if(FindAnyObjectByType<Test>().ownedChips < chips || chips <= 0)return;
+            playerHands.ResetSelectedCard();
             FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
             this.chips *= 2;
             isDoubleDown = true;
