@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+using DG.Tweening;
 
 namespace CardGame
 {
@@ -15,8 +16,11 @@ namespace CardGame
         public List<Card> cards { get; private set; }
         public Role role;
         public float spacing = 1;
+        
         int selectedCardIndex;
         bool hideFirstCard;
+        bool isAnimating;
+        
         BlackjackController blackjackController;
 
         void Start()
@@ -46,14 +50,15 @@ namespace CardGame
                 int index = cards.Count;
                 displayCard.OnCardClicked += () =>
                 {
-                    // blackjackController.selectedHands = this;
-                    // selectedCardIndex = index == selectedCardIndex ? -1 : index;
+                    if (isAnimating) return;
+
                     blackjackController.selectedHands = this;
                     if (selectedCardIndex == index)
                     {
                         // Deselect the card
                         selectedCardIndex = -1;
-                        cardObject.transform.localPosition -= new Vector3(0, 0.5f, 0); // Move back to original position
+                        isAnimating = true;
+                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() => isAnimating = false);;// Move back to original position
                     }
                     else
                     {
@@ -61,12 +66,14 @@ namespace CardGame
                         if (selectedCardIndex != -1)
                         {
                             Transform previousCard = transform.GetChild(selectedCardIndex);
-                            previousCard.localPosition -= new Vector3(0, 0.5f, 0);
+                            isAnimating = true;
+                            previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => isAnimating = false);;
                         }
 
                         // Select the new card and move it up
                         selectedCardIndex = index;
-                        cardObject.transform.localPosition += new Vector3(0, 0.5f, 0); // Move up
+                        isAnimating = true;
+                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() => isAnimating = false);; // Move up
                     }
                 };
             }
@@ -84,17 +91,14 @@ namespace CardGame
         public bool ReplaceCard(Card card, out Card replacedCard)
         {
             replacedCard = null;
-            Debug.Log("selectedCardIndex: " + selectedCardIndex);
             if (selectedCardIndex > -1 && selectedCardIndex < cards.Count)
             {
-                Debug.Log("Replacing card");
                 replacedCard = cards[selectedCardIndex];
                 cards[selectedCardIndex] = card;
                 transform.GetChild(selectedCardIndex).GetComponent<DisplayCard>().Instantiate(card);
                 UpdateHands();
                 return true;
             }
-            Debug.Log("No card selected");
             return false;
         }
 
@@ -116,10 +120,14 @@ namespace CardGame
 
         public void ResetSelectedCard(bool moveBack = true)
         {
+            if (isAnimating) return;
             if (selectedCardIndex != -1 && selectedCardIndex < transform.childCount)
             {
                 Transform selectedCard = transform.GetChild(selectedCardIndex);
-                if (moveBack) selectedCard.localPosition -= new Vector3(0, 0.5f, 0); // Move back to original position
+                if (moveBack) {
+                    isAnimating = true;
+                    selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f); // Move back to original position
+                }
                 selectedCardIndex = -1;
             }
         }
