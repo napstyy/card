@@ -25,11 +25,11 @@ namespace CardGame
             simpleUIController = FindAnyObjectByType<SimpleUIController>();
         }
 
-        void StartOfRound()
+        public void StartOfRound()
         {
             playerHands.InitializeHands();
             dealerHands.InitializeHands();
-            deck = InitializeDeck();
+            deck = InitializeDeck(4);
             playerHands.AddCardToHands(DrawCard());
             dealerHands.AddCardToHands(DrawCard());
             playerHands.AddCardToHands(DrawCard());
@@ -37,6 +37,8 @@ namespace CardGame
 
             int playerPoints = CountPoints(playerHands.cards);
             playerPointsText.SetText(playerPoints.ToString());
+
+            simpleUIController.HideBetsButtons();
         }
 
         List<Card> InitializeDeck(int numberOfDecks = 1)
@@ -156,8 +158,6 @@ namespace CardGame
             if(chips > FindAnyObjectByType<Test>().ownedChips)return;
             this.chips += chips;
             FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
-            StartOfRound();
-            simpleUIController.HideBetsButtons();
         }
 
         public void DoubleDown()
