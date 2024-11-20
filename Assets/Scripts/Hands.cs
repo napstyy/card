@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using DG.Tweening;
+using UnityEngine.UI;
 
 namespace CardGame
 {
@@ -14,8 +15,9 @@ namespace CardGame
         }
 
         public List<Card> cards { get; private set; }
-        public Role role;
+        public Role role = Role.Player;
         public float spacing = 1;
+        public int chips;
 
         int selectedCardIndex;
         bool hideFirstCard;
@@ -114,6 +116,30 @@ namespace CardGame
             }
             return false;
         }
+
+        public void DropCard(int index)
+        {
+            if(index > cards.Count-1)return;
+            cards.RemoveAt(index);
+            GameObject removeCard = transform.GetChild(index).gameObject;
+            removeCard.transform.SetParent(null);
+            Destroy(removeCard);
+            UpdateHands();
+        }
+
+        public Hands Split()
+        {
+            GameObject splitHands = new GameObject("Split Hands");
+            Hands newHands = splitHands.AddComponent<Hands>(); 
+            splitHands.transform.position = transform.position - new Vector3(2.5f,0);
+            newHands.InitializeHands();
+            newHands.AddCardToHands(cards[0]);
+            newHands.chips = this.chips;
+            DropCard(0);
+            return newHands;
+        }
+
+        public bool IsPair() => cards[0].rank == cards[1].rank && cards.Count == 2;
 
         void UpdateHands()
         {
