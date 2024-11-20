@@ -16,16 +16,19 @@ namespace CardGame
         public List<Card> cards { get; private set; }
         public Role role;
         public float spacing = 1;
-        
+
         int selectedCardIndex;
         bool hideFirstCard;
         bool isAnimating;
-        
+
         BlackjackController blackjackController;
+        SimpleUIController simpleUIController;
 
         void Start()
         {
             blackjackController = FindAnyObjectByType<BlackjackController>();
+            simpleUIController = FindAnyObjectByType<SimpleUIController>();
+            simpleUIController.DisableReplaceButton();
         }
 
         public void InitializeHands()
@@ -58,7 +61,11 @@ namespace CardGame
                         // Deselect the card
                         selectedCardIndex = -1;
                         isAnimating = true;
-                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() => isAnimating = false);;// Move back to original position
+                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
+                        {
+                            isAnimating = false;
+                            simpleUIController.DisableReplaceButton();
+                        }); // Move back to original position
                     }
                     else
                     {
@@ -67,13 +74,17 @@ namespace CardGame
                         {
                             Transform previousCard = transform.GetChild(selectedCardIndex);
                             isAnimating = true;
-                            previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => isAnimating = false);;
+                            previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => isAnimating = false); ;
                         }
 
                         // Select the new card and move it up
                         selectedCardIndex = index;
                         isAnimating = true;
-                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() => isAnimating = false);; // Move up
+                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() => 
+                        {
+                            isAnimating = false;
+                            simpleUIController.EnableReplaceButton();
+                        }); // Move up
                     }
                 };
             }
@@ -97,6 +108,8 @@ namespace CardGame
                 cards[selectedCardIndex] = card;
                 transform.GetChild(selectedCardIndex).GetComponent<DisplayCard>().Instantiate(card);
                 UpdateHands();
+                selectedCardIndex = -1;
+                simpleUIController.DisableReplaceButton();
                 return true;
             }
             return false;
@@ -124,9 +137,14 @@ namespace CardGame
             if (selectedCardIndex != -1 && selectedCardIndex < transform.childCount)
             {
                 Transform selectedCard = transform.GetChild(selectedCardIndex);
-                if (moveBack) {
+                if (moveBack)
+                {
                     isAnimating = true;
-                    selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f); // Move back to original position
+                    selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => 
+                    {
+                        isAnimating = false;
+                        simpleUIController.DisableReplaceButton();
+                    }); // Move back to original position
                 }
                 selectedCardIndex = -1;
             }

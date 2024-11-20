@@ -27,6 +27,10 @@ namespace CardGame
         {
             removedCards = new List<Card>();
             simpleUIController = FindAnyObjectByType<SimpleUIController>();
+            simpleUIController.ShowBetsButtons();
+            simpleUIController.HideGameButtons();
+            simpleUIController.HidePlayerPointsText();
+            simpleUIController.DisableStartButton();
         }
 
         public void StartOfRound()
@@ -43,6 +47,8 @@ namespace CardGame
             playerPointsText.SetText(playerPoints.ToString());
 
             simpleUIController.HideBetsButtons();
+            simpleUIController.ShowGameButtons();
+            simpleUIController.ShowPlayerPointsText();
         }
 
         List<Card> InitializeDeck(int numberOfDecks = 1)
@@ -151,7 +157,6 @@ namespace CardGame
         public void Hit()
         {
             if (CountPoints(playerHands?.cards) > 21 || chips <= 0) return;
-            playerHands.ResetSelectedCard();
             playerHands.AddCardToHands(DrawCard());
             int playerPoints = CountPoints(playerHands.cards);
             playerPointsText.SetText(playerPoints.ToString());
@@ -166,6 +171,8 @@ namespace CardGame
             if(chips > FindAnyObjectByType<Test>().ownedChips)return;
             this.chips += chips;
             FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
+            simpleUIController.UpdateBetText(this.chips);
+            if (this.chips > 0) simpleUIController.EnableStartButton();
         }
 
         public void DoubleDown()
@@ -206,6 +213,9 @@ namespace CardGame
             playerHands.InitializeHands();
             dealerHands.InitializeHands();
             simpleUIController.ShowBetsButtons();
+            simpleUIController.HideGameButtons();
+            simpleUIController.HidePlayerPointsText();
+            simpleUIController.DisableStartButton();
         }
     }
 }
