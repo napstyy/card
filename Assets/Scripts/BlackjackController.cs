@@ -124,7 +124,7 @@ namespace CardGame
                 {
                     FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + chips * 2);
                 }
-                else if(playerPoints == dealerPoints)
+                else if(playerPoints == dealerPoints && dealerHands.cards.Count < 5)
                 {
                     FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + chips);
                 }
