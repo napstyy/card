@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -25,12 +26,13 @@ namespace CardGame
             Start,
             End
         }
-
+        public GameObject playerHandsPrefab;
         public bool isDoubleDown;
         public bool isSplited;
         public List<Hands> playerHands;
         public Hands dealerHands;
         public Hands selectedHands;
+
 
         RoundState roundState;
 
@@ -191,8 +193,8 @@ namespace CardGame
         {
             if (CountPoints(hands?.cards) > 21 || roundState == RoundState.End) return;
             hands.AddCardToHands(DrawCard());
-            int playerPoints = CountPoints(hands.cards);
-            if (playerPoints > 21) {
+            bool allBusted = playerHands.All(tempHands => CountPoints(tempHands.cards) > 21);
+            if (allBusted) {
                 Debug.Log("Player Busted");
                 Stand();
             }

@@ -1,13 +1,15 @@
+using System;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 using DG.Tweening;
-using UnityEngine.UI;
 
 namespace CardGame
 {
     public class Hands : MonoBehaviour
     {
+        protected static event Action UpdateSelectedCards;
+        public event Action<int> OnHandsUpdate;
+
         public enum Role
         {
             Dealer,
@@ -15,107 +17,140 @@ namespace CardGame
         }
 
         public List<Card> cards { get; private set; }
-        public Role role = Role.Player;
-        public float spacing = 1;
+        public Role playerRole = Role.Player;
+        public float spacing = 1f;
         public int chips;
 
-        List<DisplayCard> cardObjectsList;
+        private List<DisplayCard> _cardObjectsList;
+        private int _selectedCardIndex = -1;
+        private bool _hideFirstCard;
+        private bool _isAnimating;
+        private SimpleUIController _simpleUIController;
+        private Action _updateSelectedCardsHandler;
 
-        int selectedCardIndex;
-        bool hideFirstCard;
-        bool isAnimating;
-
-        BlackjackController blackjackController;
-        SimpleUIController simpleUIController;
-
-        void Start()
+        private void Start()
         {
-            cardObjectsList = new List<DisplayCard>();
-            cards = new List<Card>();
-            blackjackController = FindAnyObjectByType<BlackjackController>();
-            simpleUIController = FindAnyObjectByType<SimpleUIController>();
-            simpleUIController.DisableReplaceButton();
+            _simpleUIController = FindObjectOfType<SimpleUIController>();
+            _simpleUIController.DisableReplaceButton();
+
+            _updateSelectedCardsHandler = () =>
+            {
+                if (BlackjackController.Instance.selectedHands != this && _selectedCardIndex >= 0)
+                {
+                    Transform previousCard = _cardObjectsList[_selectedCardIndex].transform;
+                    _isAnimating = true;
+                    previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
+                    {
+                        _isAnimating = false;
+                        _selectedCardIndex = -1;
+                    });
+                }
+            };
+
+            UpdateSelectedCards += _updateSelectedCardsHandler;
+        }
+
+        private void OnDestroy()
+        {
+            UpdateSelectedCards -= _updateSelectedCardsHandler;
         }
 
         public void InitializeHands()
         {
-            foreach(DisplayCard displayCard in cardObjectsList)
+            if (_cardObjectsList == null) _cardObjectsList = new List<DisplayCard>();
+            if (cards == null) cards = new List<Card>();
+
+            foreach (DisplayCard displayCard in _cardObjectsList)
             {
-                ObjectPool.instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, displayCard.gameObject);
+                ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, displayCard.gameObject);
             }
-            hideFirstCard = role == Role.Dealer;
-            selectedCardIndex = -1;
-            cards?.Clear();
-            cardObjectsList?.Clear();
+
+            _hideFirstCard = playerRole == Role.Dealer;
+            _selectedCardIndex = -1;
+            cards.Clear();
+            _cardObjectsList.Clear();
         }
 
         public void AddCardToHands(Card card)
         {
-            GameObject cardObject = ObjectPool.instance.GetObject(CardSpriteReference.Instance.cardPrefab, transform);
+            GameObject cardObject = ObjectPool.Instance.GetObject(CardSpriteReference.Instance.cardPrefab, transform);
             DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
-            if (role == Role.Player)
+            int index = cards.Count;
+
+            if (playerRole == Role.Player)
             {
-                int index = cards.Count;
-                displayCard.OnCardClicked += () =>
-                {
-                    if (isAnimating) return;
-
-                    blackjackController.selectedHands = this;
-                    if (selectedCardIndex == index)
-                    {
-                        // Deselect the card
-                        selectedCardIndex = -1;
-                        isAnimating = true;
-                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
-                        {
-                            isAnimating = false;
-                            simpleUIController.DisableReplaceButton();
-                        }); // Move back to original position
-                    }
-                    else
-                    {
-                        // Move previously selected card back to original position
-                        if (selectedCardIndex != -1)
-                        {
-                            Transform previousCard = cardObjectsList[selectedCardIndex].transform;
-                            isAnimating = true;
-                            previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => isAnimating = false); ;
-                        }
-
-                        // Select the new card and move it up
-                        selectedCardIndex = index;
-                        isAnimating = true;
-                        cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() => 
-                        {
-                            isAnimating = false;
-                            simpleUIController.EnableReplaceButton();
-                        }); // Move up
-                    }
-                };
+                displayCard.OnCardClicked += () => HandleCardClick(cardObject, index);
             }
+
             displayCard.Instantiate(card);
             cards.Add(card);
-            cardObjectsList.Add(displayCard);
+            _cardObjectsList.Add(displayCard);
             UpdateHands();
+        }
+
+        private void HandleCardClick(GameObject cardObject, int index)
+        {
+            if (_isAnimating) return;
+
+            if (_selectedCardIndex == index)
+            {
+                DeselectCard(cardObject);
+            }
+            else
+            {
+                SelectCard(cardObject, index);
+            }
+
+            UpdateSelectedCards?.Invoke();
+        }
+
+        private void DeselectCard(GameObject cardObject)
+        {
+            _selectedCardIndex = -1;
+            _isAnimating = true;
+            cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
+            {
+                _isAnimating = false;
+                _simpleUIController.DisableReplaceButton();
+            });
+        }
+
+        private void SelectCard(GameObject cardObject, int index)
+        {
+            if (_selectedCardIndex >= 0 && BlackjackController.Instance.selectedHands == this)
+            {
+                Transform previousCard = _cardObjectsList[_selectedCardIndex].transform;
+                _isAnimating = true;
+                previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => _isAnimating = false);
+            }
+
+            BlackjackController.Instance.selectedHands = this;
+            _selectedCardIndex = index;
+            _isAnimating = true;
+            cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() =>
+            {
+                _isAnimating = false;
+                _simpleUIController.EnableReplaceButton();
+            });
         }
 
         public void ShowHands()
         {
-            hideFirstCard = false;
+            _hideFirstCard = false;
             UpdateHands();
         }
 
         public bool ReplaceCard(Card card, out Card replacedCard)
         {
             replacedCard = null;
-            if (selectedCardIndex > -1 && selectedCardIndex < cards.Count)
+            if (_selectedCardIndex >= 0 && _selectedCardIndex < cards.Count)
             {
-                replacedCard = cards[selectedCardIndex];
-                cards[selectedCardIndex] = card;
-                cardObjectsList[selectedCardIndex].Instantiate(card);
+                replacedCard = cards[_selectedCardIndex];
+                cards[_selectedCardIndex] = card;
+                _cardObjectsList[_selectedCardIndex].Instantiate(card);
                 UpdateHands();
-                selectedCardIndex = -1;
-                simpleUIController.DisableReplaceButton();
+                _selectedCardIndex = -1;
+                _simpleUIController.DisableReplaceButton();
                 return true;
             }
             return false;
@@ -123,61 +158,73 @@ namespace CardGame
 
         public void DropCard(int index)
         {
-            if(index > cards.Count-1)return;
+            if (index < 0 || index >= cards.Count) return;
+
+            GameObject removeCard = _cardObjectsList[index].gameObject;
             cards.RemoveAt(index);
-            GameObject removeCard = cardObjectsList[index].gameObject;
+            _cardObjectsList.RemoveAt(index);
             removeCard.transform.SetParent(null);
-            Destroy(removeCard);
+            ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, removeCard);
             UpdateHands();
         }
 
         public Hands Split()
         {
-            GameObject splitHands = new GameObject("Split Hands");
-            Hands newHands = splitHands.AddComponent<Hands>(); 
-            splitHands.transform.position = transform.position - new Vector3(2.5f,0);
+            GameObject splitHandsObj = Instantiate(BlackjackController.Instance.playerHandsPrefab);
+            Hands newHands = splitHandsObj.GetComponent<Hands>();
+            splitHandsObj.transform.position = transform.position - new Vector3(2.5f, 0);
+
             newHands.InitializeHands();
-            newHands.AddCardToHands(cards[0]);
-            newHands.chips = this.chips;
-            DropCard(0);
+            newHands.AddCardToHands(cards[1]);
+            newHands.chips = chips;
+            DropCard(1);
+
             return newHands;
         }
 
-        public bool IsPair() => cards[0].rank == cards[1].rank && cards.Count == 2;
-
-        void UpdateHands()
+        public bool IsPair()
         {
-            for (int i = 0; i < cardObjectsList.Count; i++)
+            return cards.Count == 2 && cards[0].rank == cards[1].rank;
+        }
+
+        private void UpdateHands()
+        {
+            for (int i = 0; i < _cardObjectsList.Count; i++)
             {
-                DisplayCard card = cardObjectsList[i];
+                DisplayCard card = _cardObjectsList[i];
                 Transform child = card.transform;
                 SpriteRenderer spriteRenderer = child.GetComponent<SpriteRenderer>();
-                child.localPosition = new Vector3(i - transform.childCount / 2, 0, 0) * spacing;
+
+                child.localPosition = new Vector3((i - _cardObjectsList.Count / 2f) * spacing, 0f, 0f);
                 spriteRenderer.sortingOrder = i;
-                if (hideFirstCard && i == 0)
+
+                if (_hideFirstCard && i == 0)
+                {
                     card.HideCard();
+                }
                 else
+                {
                     card.ShowCard();
+                }
             }
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(cards));
         }
 
         public void ResetSelectedCard(bool moveBack = true)
         {
-            if (isAnimating) return;
-            if (selectedCardIndex != -1 && selectedCardIndex < cardObjectsList.Count)
+            if (_isAnimating || _selectedCardIndex < 0 || _selectedCardIndex >= _cardObjectsList.Count) return;
+
+            Transform selectedCard = _cardObjectsList[_selectedCardIndex].transform;
+            if (moveBack)
             {
-                Transform selectedCard = cardObjectsList[selectedCardIndex].transform;
-                if (moveBack)
+                _isAnimating = true;
+                selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
                 {
-                    isAnimating = true;
-                    selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => 
-                    {
-                        isAnimating = false;
-                        simpleUIController.DisableReplaceButton();
-                    }); // Move back to original position
-                }
-                selectedCardIndex = -1;
+                    _isAnimating = false;
+                    _simpleUIController.DisableReplaceButton();
+                });
             }
+            _selectedCardIndex = -1;
         }
     }
 }

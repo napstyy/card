@@ -3,7 +3,7 @@ using UnityEngine;
  
 public class ObjectPool : MonoBehaviour
 {
-    public static ObjectPool instance{get;private set;}
+    public static ObjectPool Instance{get;private set;}
     [System.Serializable]
     public class Pool
     {
@@ -18,9 +18,9 @@ public class ObjectPool : MonoBehaviour
  
     void Awake()
     {
-        if(instance == null)
+        if(Instance == null)
         {
-            instance = this;
+            Instance = this;
         }
         else
         {
