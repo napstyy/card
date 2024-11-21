@@ -6,13 +6,19 @@ namespace CardGame
 {
     public class BlackjackController : MonoBehaviour
     {
-        public int chips;
+        public enum RoundState
+        {
+            Start,
+            End
+        }
+
         public bool isDoubleDown;
-        public GameObject cardPrefab;
-        public TextMeshProUGUI playerPointsText;
-        public Hands playerHands;
+        public bool isSplited;
+        public List<Hands> playerHands;
         public Hands dealerHands;
         public Hands selectedHands;
+
+        RoundState roundState;
 
         List<Card> deck;
         List<Card> removedCards;
@@ -27,22 +33,34 @@ namespace CardGame
         {
             removedCards = new List<Card>();
             simpleUIController = FindAnyObjectByType<SimpleUIController>();
+            simpleUIController.ShowBetsButtons();
+            simpleUIController.HideGameButtons();
+            simpleUIController.HidePlayerPointsText();
+            simpleUIController.DisableStartButton();
+            roundState = RoundState.End;
         }
 
         public void StartOfRound()
         {
-            playerHands.InitializeHands();
+            if(playerHands.Count == 0) return;
+            isSplited = false;
+            isDoubleDown = false;
+            playerHands[0].InitializeHands();
             dealerHands.InitializeHands();
             deck = InitializeDeck(4);
-            playerHands.AddCardToHands(DrawCard());
+            // playerHands[0].AddCardToHands(DrawCard());
             dealerHands.AddCardToHands(DrawCard());
-            playerHands.AddCardToHands(DrawCard());
+            // playerHands[0].AddCardToHands(DrawCard());
             dealerHands.AddCardToHands(DrawCard());
 
-            int playerPoints = CountPoints(playerHands.cards);
-            playerPointsText.SetText(playerPoints.ToString());
+            // Debug Usage
+            playerHands[0].AddCardToHands(new Card(Card.Ranks.Ace, Card.Suits.Spades));
+            playerHands[0].AddCardToHands(new Card(Card.Ranks.Ace, Card.Suits.Spades));
 
             simpleUIController.HideBetsButtons();
+            simpleUIController.ShowGameButtons();
+            simpleUIController.ShowPlayerPointsText();
+            roundState = RoundState.Start;
         }
 
         List<Card> InitializeDeck(int numberOfDecks = 1)
@@ -107,8 +125,11 @@ namespace CardGame
 
         public void Stand()
         {
-            if(chips <= 0)return;
-            playerHands.ResetSelectedCard();
+            if(roundState == RoundState.End)return;
+            foreach(Hands hands in playerHands)
+            {
+                hands.ResetSelectedCard();
+            }
             int dealerPoints = CountPoints(dealerHands.cards);
             dealerHands.ShowHands();
             while (dealerPoints < 17)
@@ -116,45 +137,47 @@ namespace CardGame
                 dealerHands.AddCardToHands(DrawCard());
                 dealerPoints = CountPoints(dealerHands.cards);
             }
-            int playerPoints = CountPoints(playerHands.cards);
-
-            if(playerPoints <= 21)
+            foreach(Hands hands in playerHands)
             {
-                if(dealerPoints > 21 || playerPoints > dealerPoints)
+                int playerPoints = CountPoints(hands.cards);
+
+                if(playerPoints <= 21)
                 {
-                    FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + chips * 2);
+                    if(dealerPoints > 21 || playerPoints > dealerPoints)
+                    {
+                        FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips * 2);
+                    }
+                    else if(playerPoints == dealerPoints && dealerHands.cards.Count < 5)
+                    {
+                        FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips);
+                    }
                 }
-                else if(playerPoints == dealerPoints && dealerHands.cards.Count < 5)
-                {
-                    FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + chips);
-                }
+                hands.chips = 0;
+                string gameResult = dealerPoints > 21 ? "Player Win!" : playerPoints < dealerPoints || playerPoints > 21? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
+                Debug.Log(gameResult + $" Dealer: {dealerPoints} | Player: {playerPoints}");   
             }
-            chips = 0;
-            string gameResult = dealerPoints > 21 ? "Player Win!" : playerPoints < dealerPoints || playerPoints > 21? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
-            Debug.Log(gameResult + $" Dealer: {dealerPoints} | Player: {playerPoints}");
+            roundState = RoundState.End;
         }
 
         public void Replace()
         {
-            if(chips <= 0)return;
-            List<Card> cards = selectedHands?.cards;
+            if(roundState == RoundState.End)return;
             if (selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
             {
                 removedCards.Add(replacedCard);
-                int playerPoints = CountPoints(cards);
-                playerPointsText.SetText(playerPoints.ToString());
             }
-            playerHands.ResetSelectedCard(false);
+            foreach(Hands hands in playerHands)
+            {
+                hands.ResetSelectedCard(false);
+            }
             AudioManager.Instance.PlaySFX(carddrop);
         }
 
-        public void Hit()
+        public void Hit(Hands hands)
         {
-            if (CountPoints(playerHands?.cards) > 21 || chips <= 0) return;
-            playerHands.ResetSelectedCard();
-            playerHands.AddCardToHands(DrawCard());
-            int playerPoints = CountPoints(playerHands.cards);
-            playerPointsText.SetText(playerPoints.ToString());
+            if (CountPoints(hands?.cards) > 21 || roundState == RoundState.End) return;
+            hands.AddCardToHands(DrawCard());
+            int playerPoints = CountPoints(hands.cards);
             if (playerPoints > 21) {
                 Debug.Log("Player Busted");
                 Stand();
@@ -164,22 +187,35 @@ namespace CardGame
         public void Bet(int chips)
         {
             if(chips > FindAnyObjectByType<Test>().ownedChips)return;
-            this.chips += chips;
+            playerHands[0].chips += chips;
             FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
+            simpleUIController.UpdateBetText(playerHands[0].chips);
+            if (playerHands[0].chips > 0 && roundState == RoundState.End) simpleUIController.EnableStartButton();
         }
 
         public void DoubleDown()
         {
-            if(FindAnyObjectByType<Test>().ownedChips < chips || chips <= 0)return;
-            playerHands.ResetSelectedCard();
-            FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - chips);
-            this.chips *= 2;
+            if(FindAnyObjectByType<Test>().ownedChips < playerHands[0].chips || roundState == RoundState.End || isSplited)return;
             isDoubleDown = true;
-            playerHands.AddCardToHands(DrawCard());
-            int playerPoints = CountPoints(playerHands.cards);
-            playerPointsText.SetText(playerPoints.ToString());
+            playerHands[0].ResetSelectedCard();
+            FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - playerHands[0].chips);
+            playerHands[0].chips *= 2;
+            playerHands[0].AddCardToHands(DrawCard());
+            int playerPoints = CountPoints(playerHands[0].cards);
             if (playerPoints > 21) Debug.Log("Player Busted");
             Stand();
+        }
+
+        public void Split()
+        {
+            if(FindAnyObjectByType<Test>().ownedChips < playerHands[0].chips || roundState == RoundState.End || !playerHands[0].IsPair() || isSplited)return;
+            isSplited = true;
+            playerHands.Add(playerHands[0].Split());
+            FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - playerHands[0].chips);
+            foreach(Hands hands in playerHands)
+            {
+                hands.AddCardToHands(DrawCard());
+            }
         }
 
         public int CountPoints(List<Card> hands)
@@ -203,9 +239,18 @@ namespace CardGame
 
         public void Restart()
         {
-            playerHands.InitializeHands();
+            while(playerHands.Count > 1)
+            {
+                Hands hands = playerHands[playerHands.Count-1];
+                playerHands.Remove(hands);
+                Destroy(hands.gameObject);
+            }
+            playerHands[0].InitializeHands();
             dealerHands.InitializeHands();
             simpleUIController.ShowBetsButtons();
+            simpleUIController.HideGameButtons();
+            simpleUIController.HidePlayerPointsText();
+            simpleUIController.DisableStartButton();
         }
     }
 }
