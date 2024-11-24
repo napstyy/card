@@ -1,10 +1,26 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
 
 namespace CardGame
 {
+
+    public enum RuleCategory
+    {
+        SuitsType,
+        RanksType
+    }
+
+    [System.Serializable]
+    public struct SecretRule
+    {
+        public int id;
+        public RuleCategory category;
+        public Card.Ranks triggeredRank;
+        public Card.Suits triggeredSuit; 
+    }
+
     public class BlackjackController : MonoBehaviour
     {
         public static BlackjackController Instance { get; private set; }
@@ -33,6 +49,8 @@ namespace CardGame
         public Hands dealerHands;
         public Hands selectedHands;
 
+        [Header("Secret Rules")]
+        public SecretRule[] rules;
 
         RoundState roundState;
 
@@ -47,6 +65,7 @@ namespace CardGame
         // Start is called before the first frame update
         void Start()
         {
+            rules = new SecretRule[2];
             removedCards = new List<Card>();
             simpleUIController = FindAnyObjectByType<SimpleUIController>();
             simpleUIController.ShowBetsButtons();
@@ -64,14 +83,10 @@ namespace CardGame
             playerHands[0].InitializeHands();
             dealerHands.InitializeHands();
             deck = InitializeDeck(4);
-            // playerHands[0].AddCardToHands(DrawCard());
+            playerHands[0].AddCardToHands(DrawCard());
             dealerHands.AddCardToHands(DrawCard());
-            // playerHands[0].AddCardToHands(DrawCard());
+            playerHands[0].AddCardToHands(DrawCard());
             dealerHands.AddCardToHands(DrawCard());
-
-            // Debug Usage
-            playerHands[0].AddCardToHands(new Card(Card.Ranks.Ace, Card.Suits.Spades));
-            playerHands[0].AddCardToHands(new Card(Card.Ranks.Ace, Card.Suits.Spades));
 
             simpleUIController.HideBetsButtons();
             simpleUIController.ShowGameButtons();
@@ -98,7 +113,7 @@ namespace CardGame
 
         Card DrawCard()
         {
-            int rnd = Random.Range(0, deck.Count);
+            int rnd = UnityEngine.Random.Range(0, deck.Count);
             Card card = deck[rnd];
             deck.Remove(card);
             removedCards.Add(card);
@@ -139,6 +154,159 @@ namespace CardGame
             return point;
         }
 
+        #region Rules' Effect
+
+        void IncrementPointsForSameSuit(Card referenceCard, Hands hands)
+        {
+            foreach (var card in hands.cards)
+            {
+                if (card.suit == referenceCard.suit)
+                {
+                    hands.extraPoints += 1;
+                }
+            }
+        }
+
+        void DecrementPointsForSameSuit(Card referenceCard, Hands hands)
+        {
+            foreach (var card in hands.cards)
+            {
+                if (card.suit == referenceCard.suit)
+                {
+                    hands.extraPoints -= 1;
+                }
+            }
+        }
+        void AddExtraPoints(int extraPoints, Hands hands)
+        {
+            hands.extraPoints += extraPoints;
+        }
+
+        void KeepDrawingUntilDifferentSuit(Hands hands)
+        {
+            while (deck.Count > 0)
+            {
+                Card lastCard = hands.cards[hands.cards.Count-1];
+                Card card = DrawCard();
+                hands.AddCardToHands(card);
+                if(lastCard.suit != card.suit)
+                {
+                    break;
+                }
+            }
+        }
+
+        void RemoveCardsGreaterThan(int value, Hands hands)
+        {
+            for(int i = hands.cards.Count-1; i >= 0; i--)
+            {
+                if((int)hands.cards[i].rank < value)
+                {
+                    hands.DropCard(i);
+                }
+            }
+        }
+
+        void RemoveCardsSmallerThan(int value, Hands hands)
+        {
+            for(int i = hands.cards.Count-1; i >= 0; i--)
+            {
+                if((int)hands.cards[i].rank > value)
+                {
+                    hands.DropCard(i);
+                }
+            }
+        }
+
+        //射龍門
+        void GoalCheck(Hands hands)
+        {
+            if (hands.cards.Count == 3)
+            {
+                int middleRankIndex = (int)hands.cards[1].rank;
+                int leftRankIndex = (int)hands.cards[0].rank;
+                int rightRankIndex = (int)hands.cards[2].rank;
+
+                if(middleRankIndex == leftRankIndex || middleRankIndex == rightRankIndex)
+                {
+                    Stand();
+                }
+                else if(middleRankIndex > leftRankIndex || middleRankIndex < rightRankIndex)
+                {
+                    FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips);
+                }
+                else
+                {
+                    hands.DropCard(1);
+                }
+            }
+        }
+
+        #endregion
+
+        void TriggerSecretRules(Card card, Hands hands)
+        {
+            for(int i = 0; i < 2; i++)
+            {
+                SecretRule rule = rules[i];
+                if(rule.category == RuleCategory.SuitsType && card.suit == rule.triggeredSuit)
+                {
+                    switch(rule.id)
+                    {
+                        case 0:
+                            IncrementPointsForSameSuit(card, hands);
+                        break;
+                        case 1:
+                            DecrementPointsForSameSuit(card, hands);
+                        break;
+                        case 2:
+                            KeepDrawingUntilDifferentSuit(hands);
+                        break;
+                        case 3:
+                            GoalCheck(hands);
+                        break;
+                        case 4:
+                            Card tempCard = DrawCard();
+                            if(GetCardPoint(tempCard) > GetCardPoint(card)){
+                                hands.AddCardToHands(tempCard);
+                            }
+                            else
+                            {
+                                dealerHands.AddCardToHands(tempCard);
+                            }
+                        break;
+                        case 5:
+                            AddExtraPoints(GetCardPoint(card)%2 == 0?-1:1,hands);
+                        break;
+                    }
+                }
+                else if(rule.category == RuleCategory.RanksType && card.rank == rule.triggeredRank)
+                {
+                    switch(rule.id)
+                    {
+                        case 0:
+                            AddExtraPoints(1,hands);
+                        break;
+                        case 2:
+                            RemoveCardsGreaterThan(GetCardPoint(card),hands);
+                        break;
+                        case 3:
+                            RemoveCardsSmallerThan(GetCardPoint(card),hands);
+                        break;
+                        case 5:
+                            List<Card> tempCard = dealerHands.cards;
+                            dealerHands.SetHands(hands.cards);
+                            hands.SetHands(tempCard);
+                        break;
+                        case 6:
+                            Card copiedCard = new Card(card.rank, card.suit);
+                            dealerHands.AddCardToHands(copiedCard);
+                        break;
+                    }
+                }
+            }
+        }
+
         public void Stand()
         {
             if(roundState == RoundState.End)return;
@@ -146,22 +314,22 @@ namespace CardGame
             {
                 hands.ResetSelectedCard();
             }
-            int dealerPoints = CountPoints(dealerHands.cards);
+            int dealerPoints = CountPoints(dealerHands);
             dealerHands.ShowHands();
             while (dealerPoints < 17)
             {
                 dealerHands.AddCardToHands(DrawCard());
-                dealerPoints = CountPoints(dealerHands.cards);
+                dealerPoints = CountPoints(dealerHands);
             }
             foreach(Hands hands in playerHands)
             {
-                int playerPoints = CountPoints(hands.cards);
+                int playerPoints = CountPoints(hands);
 
                 if(playerPoints <= 21)
                 {
                     if(dealerPoints > 21 || playerPoints > dealerPoints)
                     {
-                        FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips * 2);
+                        FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips * 3);
                     }
                     else if(playerPoints == dealerPoints && dealerHands.cards.Count < 5)
                     {
@@ -191,9 +359,11 @@ namespace CardGame
 
         public void Hit(Hands hands)
         {
-            if (CountPoints(hands?.cards) > 21 || roundState == RoundState.End) return;
-            hands.AddCardToHands(DrawCard());
-            bool allBusted = playerHands.All(tempHands => CountPoints(tempHands.cards) > 21);
+            if (CountPoints(hands) > 21 || roundState == RoundState.End) return;
+            Card card = DrawCard();
+            hands.AddCardToHands(card);
+            TriggerSecretRules(card, hands);
+            bool allBusted = playerHands.All(tempHands => CountPoints(tempHands) > 21);
             if (allBusted) {
                 Debug.Log("Player Busted");
                 Stand();
@@ -217,7 +387,7 @@ namespace CardGame
             FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips - playerHands[0].chips);
             playerHands[0].chips *= 2;
             playerHands[0].AddCardToHands(DrawCard());
-            int playerPoints = CountPoints(playerHands[0].cards);
+            int playerPoints = CountPoints(playerHands[0]);
             if (playerPoints > 21) Debug.Log("Player Busted");
             Stand();
         }
@@ -234,11 +404,12 @@ namespace CardGame
             }
         }
 
-        public int CountPoints(List<Card> hands)
+        public int CountPoints(Hands hands)
         {
+            if(hands == null) return 999;
             int points = 0;
             int aceNumber = 0;
-            foreach (Card card in hands)
+            foreach (Card card in hands.cards)
             {
                 points += GetCardPoint(card);
                 aceNumber += card.rank == Card.Ranks.Ace ? 1 : 0;
@@ -250,7 +421,21 @@ namespace CardGame
                 points -= 10;
             }
 
-            return points;
+            return points + hands.extraPoints;
+        }
+
+        public void GetRandomRules()
+        {
+            rules[0] = new SecretRule{
+                id = UnityEngine.Random.Range(0,6),
+                category = RuleCategory.SuitsType,
+                triggeredSuit = (Card.Suits)UnityEngine.Random.Range(0,4)
+            };
+            rules[1] = new SecretRule{
+                id = UnityEngine.Random.Range(0,6),
+                category = RuleCategory.RanksType,
+                triggeredRank = (Card.Ranks)UnityEngine.Random.Range(2,15)
+            };
         }
 
         public void Restart()

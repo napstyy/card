@@ -96,6 +96,11 @@ namespace CardGame
 
         private void OnDisable()
         {
+            RemoveEvent();
+        }
+
+        public void RemoveEvent()
+        {
             OnCardClicked = null;
         }
     }

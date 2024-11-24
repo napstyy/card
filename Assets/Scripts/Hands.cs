@@ -20,6 +20,7 @@ namespace CardGame
         public Role playerRole = Role.Player;
         public float spacing = 1f;
         public int chips;
+        public int extraPoints;
 
         private List<DisplayCard> _cardObjectsList;
         private int _selectedCardIndex = -1;
@@ -65,6 +66,7 @@ namespace CardGame
                 ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, displayCard.gameObject);
             }
 
+            extraPoints = 0;
             _hideFirstCard = playerRole == Role.Dealer;
             _selectedCardIndex = -1;
             cards.Clear();
@@ -165,6 +167,15 @@ namespace CardGame
             _cardObjectsList.RemoveAt(index);
             removeCard.transform.SetParent(null);
             ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, removeCard);
+            for(int i = 0; i < cards.Count; i++)
+            {
+                if (playerRole == Role.Player)
+                {
+                    DisplayCard displayCard = _cardObjectsList[i];
+                    displayCard.RemoveEvent();  
+                    displayCard.OnCardClicked += () => HandleCardClick(displayCard.gameObject, i);
+                }
+            }
             UpdateHands();
         }
 
@@ -207,7 +218,7 @@ namespace CardGame
                     card.ShowCard();
                 }
             }
-            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(cards));
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
         }
 
         public void ResetSelectedCard(bool moveBack = true)
@@ -225,6 +236,12 @@ namespace CardGame
                 });
             }
             _selectedCardIndex = -1;
+        }
+
+        public void SetHands(List<Card> cards)
+        {
+            this.cards = cards;
+            UpdateHands();
         }
     }
 }

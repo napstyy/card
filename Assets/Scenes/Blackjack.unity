@@ -444,7 +444,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5842b1853d087dc4ea4f0c8f1db401f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerRole: 1
+  playerRole: 0
   spacing: 1
   chips: 0
 --- !u!1 &420366488
