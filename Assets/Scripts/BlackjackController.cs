@@ -65,7 +65,7 @@ namespace CardGame
         // Start is called before the first frame update
         void Start()
         {
-            rules = new SecretRule[2];
+            rules = new SecretRule[4];
             removedCards = new List<Card>();
             simpleUIController = FindAnyObjectByType<SimpleUIController>();
             simpleUIController.ShowBetsButtons();
@@ -82,7 +82,7 @@ namespace CardGame
             isDoubleDown = false;
             playerHands[0].InitializeHands();
             dealerHands.InitializeHands();
-            deck = InitializeDeck(4);
+            if(deck == null || deck.Count < 104)deck = InitializeDeck(4);
             playerHands[0].AddCardToHands(DrawCard());
             dealerHands.AddCardToHands(DrawCard());
             playerHands[0].AddCardToHands(DrawCard());
@@ -162,7 +162,7 @@ namespace CardGame
             {
                 if (card.suit == referenceCard.suit)
                 {
-                    hands.extraPoints += 1;
+                    hands.AddExtraPoints(1);
                 }
             }
         }
@@ -173,13 +173,13 @@ namespace CardGame
             {
                 if (card.suit == referenceCard.suit)
                 {
-                    hands.extraPoints -= 1;
+                    hands.ReduceExtraPoints(1);
                 }
             }
         }
         void AddExtraPoints(int extraPoints, Hands hands)
         {
-            hands.extraPoints += extraPoints;
+            hands.AddExtraPoints(extraPoints);
         }
 
         void KeepDrawingUntilDifferentSuit(Hands hands)
@@ -246,7 +246,7 @@ namespace CardGame
 
         void TriggerSecretRules(Card card, Hands hands)
         {
-            for(int i = 0; i < 2; i++)
+            for(int i = 0; i < rules.Length; i++)
             {
                 SecretRule rule = rules[i];
                 if(rule.category == RuleCategory.SuitsType && card.suit == rule.triggeredSuit)
@@ -329,7 +329,7 @@ namespace CardGame
                 {
                     if(dealerPoints > 21 || playerPoints > dealerPoints)
                     {
-                        FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips * 3);
+                        FindAnyObjectByType<Test>().UpdateChips(FindAnyObjectByType<Test>().ownedChips + hands.chips * (playerPoints == 21? 3:2));
                     }
                     else if(playerPoints == dealerPoints && dealerHands.cards.Count < 5)
                     {
@@ -337,7 +337,11 @@ namespace CardGame
                     }
                 }
                 hands.chips = 0;
-                string gameResult = dealerPoints > 21 ? "Player Win!" : playerPoints < dealerPoints || playerPoints > 21? "Dealer Win!" : playerPoints > dealerPoints ? "Player Win!" : "Tie";
+                string gameResult = playerPoints > 21 ? "Dealer Win!" 
+                    : dealerPoints > 21 ? "Player Win!" 
+                    : playerPoints > dealerPoints ? "Player Win!" 
+                    : playerPoints < dealerPoints ? "Dealer Win!" 
+                    : "Tie";
                 Debug.Log(gameResult + $" Dealer: {dealerPoints} | Player: {playerPoints}");   
             }
             roundState = RoundState.End;
@@ -349,6 +353,7 @@ namespace CardGame
             if (selectedHands?.ReplaceCard(DrawCard(), out Card replacedCard) ?? false)
             {
                 removedCards.Add(replacedCard);
+                TriggerSecretRules(replacedCard,selectedHands);
             }
             foreach(Hands hands in playerHands)
             {
@@ -429,13 +434,28 @@ namespace CardGame
             rules[0] = new SecretRule{
                 id = UnityEngine.Random.Range(0,6),
                 category = RuleCategory.SuitsType,
-                triggeredSuit = (Card.Suits)UnityEngine.Random.Range(0,4)
+                triggeredSuit = Card.Suits.Spades
             };
             rules[1] = new SecretRule{
                 id = UnityEngine.Random.Range(0,6),
-                category = RuleCategory.RanksType,
-                triggeredRank = (Card.Ranks)UnityEngine.Random.Range(2,15)
+                category = RuleCategory.SuitsType,
+                triggeredSuit = Card.Suits.Hearts
             };
+            rules[2] = new SecretRule{
+                id = UnityEngine.Random.Range(0,6),
+                category = RuleCategory.SuitsType,
+                triggeredSuit = Card.Suits.Diamonds
+            };
+            rules[3] = new SecretRule{
+                id = UnityEngine.Random.Range(0,6),
+                category = RuleCategory.SuitsType,
+                triggeredSuit = Card.Suits.Clubs
+            };
+            // rules[1] = new SecretRule{
+            //     id = UnityEngine.Random.Range(0,6),
+            //     category = RuleCategory.RanksType,
+            //     triggeredRank = (Card.Ranks)UnityEngine.Random.Range(2,15)
+            // };
         }
 
         public void Restart()

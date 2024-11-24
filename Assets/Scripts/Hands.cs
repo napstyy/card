@@ -20,7 +20,7 @@ namespace CardGame
         public Role playerRole = Role.Player;
         public float spacing = 1f;
         public int chips;
-        public int extraPoints;
+        public int extraPoints { get; private set; }
 
         private List<DisplayCard> _cardObjectsList;
         private int _selectedCardIndex = -1;
@@ -241,6 +241,18 @@ namespace CardGame
         public void SetHands(List<Card> cards)
         {
             this.cards = cards;
+            UpdateHands();
+        }
+
+        public void AddExtraPoints(int value)
+        {
+            extraPoints += value;
+            UpdateHands();
+        }
+
+        public void ReduceExtraPoints(int value)
+        {
+            extraPoints -= value;
             UpdateHands();
         }
     }
