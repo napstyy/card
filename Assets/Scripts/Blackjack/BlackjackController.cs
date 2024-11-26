@@ -6,7 +6,6 @@ using UnityEngine;
 namespace CardGame
 {
     #region Enums and Structs
-
     public enum RuleEffect
     {
         HoldEffect,
@@ -26,21 +25,25 @@ namespace CardGame
         public Card.Ranks? triggeredRank;
         public Card.Suits? triggeredSuit;
     }
-
     #endregion
 
     public class BlackjackController : MonoBehaviour
     {
-        #region Singleton Implementation
+        private GameManager gameManager;
 
+        #region Singleton Implementation
         public static BlackjackController Instance { get; private set; }
 
         private void Awake()
         {
-            // Implement singleton pattern
             if (Instance == null)
             {
                 Instance = this;
+                gameManager = FindObjectOfType<GameManager>();
+                if (gameManager != null)
+                {
+                    gameManager.OnGameStateChanged += HandleGameStateChange;
+                }
             }
             else
             {
@@ -48,24 +51,28 @@ namespace CardGame
             }
         }
 
+        private void OnDestroy()
+        {
+            if (gameManager != null)
+            {
+                gameManager.OnGameStateChanged -= HandleGameStateChange;
+            }
+        }
         #endregion
 
         #region Enums
-
         public enum RoundState
         {
             Start,
             End
         }
-
         #endregion
 
-        #region Event
-            public event Action<RoundState> RoundStateChanged;
+        #region Events
+        public event Action<RoundState> RoundStateChanged;
         #endregion
 
         #region Public Variables
-
         [Header("Game Objects")]
         public GameObject playerHandsPrefab;
 
@@ -75,37 +82,68 @@ namespace CardGame
         public List<Hands> playerHands;
         public Hands dealerHands;
         public Hands selectedHands;
-        public RoundState roundState{get; private set;}
-        public bool AllowSplit{get{return playerHands[0].IsPair() && !isSplit && !isDoubleDown;}}
+        public RoundState roundState { get; private set; }
+        public bool AllowSplit { get { return playerHands[0].IsPair() && !isSplit && !isDoubleDown; } }
 
         [Header("Secret Rules")]
         public SecretRule[] rules;
 
         [Header("Audio Clips")]
         public AudioClip cardDrop;
-
         #endregion
 
         #region Private Variables
-
         private Deck deck;
         private Player player;
         private int bustLimit = 21;
         private bool reducePointsByHalf;
-
         #endregion
 
         #region Unity Methods
-
         private void Start()
         {
             rules = new SecretRule[4];
             roundState = RoundState.End;
             deck = new Deck(4);
-            player = FindAnyObjectByType<Player>();
+            player = FindObjectOfType<Player>();
+
+            // Initialize playerHands if not already initialized
+            if (playerHands == null || playerHands.Count == 0)
+            {
+                playerHands = new List<Hands>();
+                GameObject playerHandsObj = Instantiate(playerHandsPrefab);
+                Hands hands = playerHandsObj.GetComponent<Hands>();
+                playerHands.Add(hands);
+            }
+
             RoundStateChanged?.Invoke(roundState);
         }
+        #endregion
 
+        #region Game State Handling
+        private void HandleGameStateChange(GameManager.GameState newState)
+        {
+            switch (newState)
+            {
+                case GameManager.GameState.Playing:
+                    StartOfRound();
+                    break;
+                case GameManager.GameState.Preparation:
+                    PrepareForNewRound();
+                    break;
+            }
+        }
+
+        private void PrepareForNewRound()
+        {
+            Restart();
+            if (playerHands.Count > 0)
+            {
+                playerHands[0].InitializeHands();
+                dealerHands.InitializeHands();
+                DealInitialCards();
+            }
+        }
         #endregion
 
         #region Initialization Methods
@@ -131,21 +169,14 @@ namespace CardGame
 
         private void DealInitialCards()
         {
-            // Deal two cards to player and dealer
             playerHands[0].AddCardToHands(deck.DrawCard());
             dealerHands.AddCardToHands(deck.DrawCard());
             playerHands[0].AddCardToHands(deck.DrawCard());
             dealerHands.AddCardToHands(deck.DrawCard());
         }
-
-        #endregion
-
-        #region Card Drawing Methods
-
         #endregion
 
         #region Game Logic Methods
-
         private int GetCardPoint(Card card)
         {
             return card.rank switch
@@ -253,6 +284,8 @@ namespace CardGame
         {
             foreach (var secretRule in rules)
             {
+                if (secretRule.effectType != RuleEffect.DiscardEffect) continue;
+
                 switch (secretRule.id)
                 {
                     case 0:
@@ -270,7 +303,9 @@ namespace CardGame
                 }
             }
         }
+        #endregion
 
+        #region Public Game Actions
         public void Stand()
         {
             if (roundState == RoundState.End) return;
@@ -287,60 +322,20 @@ namespace CardGame
             {
                 ResolveHands(hands);
             }
-            
-            player.totalBets = 0;
+
+            player.ResetBets();  // Changed this line
             roundState = RoundState.End;
             RoundStateChanged?.Invoke(roundState);
-        }
 
-        private void DealerPlay()
-        {
-            int dealerPoints = CountPoints(dealerHands);
-
-            while (dealerPoints < 17)
-            {
-                dealerHands.AddCardToHands(deck.DrawCard());
-                dealerPoints = CountPoints(dealerHands);
-            }
-        }
-
-        private void ResolveHands(Hands hands)
-        {
-            TriggerHoldEffect(hands, out float bonus);
-            int playerPoints = CountPoints(hands);
-            int dealerPoints = CountPoints(dealerHands);
-
-            if (playerPoints <= 21)
-            {
-                if (dealerPoints > 21 || playerPoints > dealerPoints)
-                {
-                    int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
-                    player.AddChips(hands.chips * multiplier * (int)bonus);
-                }
-                else if (playerPoints == dealerPoints && dealerHands.cards.Count < 5)
-                {
-                    player.AddChips(hands.chips);
-                }
-            }
-
-            hands.chips = 0;
-            DisplayGameResult(playerPoints, dealerPoints);
-        }
-
-        private void DisplayGameResult(int playerPoints, int dealerPoints)
-        {
-            string gameResult = playerPoints > 21 ? "Dealer Wins!"
-                : dealerPoints > 21 ? "Player Wins!"
-                : playerPoints > dealerPoints ? "Player Wins!"
-                : playerPoints < dealerPoints ? "Dealer Wins!"
-                : "Tie";
-
-            Debug.Log($"{gameResult} Dealer: {dealerPoints} | Player: {playerPoints}");
+            gameManager?.CompleteRound();
         }
 
         public void Replace()
         {
-            if (roundState == RoundState.End) return;
+            if (roundState == RoundState.End ||
+                gameManager.CurrentState != GameManager.GameState.Preparation ||
+                !gameManager.TryUseCardSwap())
+                return;
 
             Card newCard = deck.SpecialDrawCard();
             if (selectedHands?.ReplaceCard(newCard, out Card replacedCard) ?? false)
@@ -375,7 +370,9 @@ namespace CardGame
 
         public void Bet(int chips)
         {
-            if (chips > player.ownedChips) return;
+            if (chips > player.ownedChips ||
+                gameManager.CurrentState != GameManager.GameState.Betting)
+                return;
 
             playerHands[0].chips += chips;
             player.AddBets(chips);
@@ -384,7 +381,11 @@ namespace CardGame
 
         public void DoubleDown()
         {
-            if (player.ownedChips < playerHands[0].chips || roundState == RoundState.End || isSplit) return;
+            if (player.ownedChips < playerHands[0].chips ||
+                roundState == RoundState.End ||
+                isSplit ||
+                gameManager.CurrentState != GameManager.GameState.Playing)
+                return;
 
             isDoubleDown = true;
             playerHands[0].ResetSelectedCard();
@@ -403,7 +404,12 @@ namespace CardGame
 
         public void Split()
         {
-            if (player.ownedChips < playerHands[0].chips || roundState == RoundState.End || !playerHands[0].IsPair() || isSplit) return;
+            if (player.ownedChips < playerHands[0].chips ||
+                roundState == RoundState.End ||
+                !playerHands[0].IsPair() ||
+                isSplit ||
+                gameManager.CurrentState != GameManager.GameState.Playing)
+                return;
 
             isSplit = true;
             Hands newHands = playerHands[0].Split();
@@ -430,15 +436,73 @@ namespace CardGame
                 aceCount--;
             }
 
-            return points + hands.extraPoints;
+            int finalPoints = points + hands.extraPoints;
+            // Use the reducePointsByHalf flag
+            if (reducePointsByHalf)
+            {
+                finalPoints /= 2;
+            }
+            return finalPoints;
         }
 
-        #endregion
+        private void DealerPlay()
+        {
+            int dealerPoints = CountPoints(dealerHands);
 
-        #region Utility Methods
+            while (dealerPoints < 17)
+            {
+                dealerHands.AddCardToHands(deck.DrawCard());
+                dealerPoints = CountPoints(dealerHands);
+            }
+        }
+
+        private void ResolveHands(Hands hands)
+        {
+            TriggerHoldEffect(hands, out float bonus);
+            int playerPoints = CountPoints(hands);
+            int dealerPoints = CountPoints(dealerHands);
+            int winAmount = 0;
+
+            if (playerPoints <= 21)
+            {
+                if (dealerPoints > 21 || playerPoints > dealerPoints)
+                {
+                    int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
+                    winAmount = hands.chips * multiplier * (int)bonus;
+                    player.AddChips(winAmount);
+                }
+                else if (playerPoints == dealerPoints && dealerHands.cards.Count < 5)
+                {
+                    winAmount = hands.chips;
+                    player.AddChips(winAmount);
+                }
+            }
+
+            hands.chips = 0;
+            DisplayGameResult(playerPoints, dealerPoints, winAmount);
+        }
+
+        private void DisplayGameResult(int playerPoints, int dealerPoints, int winAmount)
+        {
+            string gameResult = playerPoints > 21 ? "Dealer Wins!"
+                : dealerPoints > 21 ? "Player Wins!"
+                : playerPoints > dealerPoints ? "Player Wins!"
+                : playerPoints < dealerPoints ? "Dealer Wins!"
+                : "Tie";
+
+            Debug.Log($"{gameResult} Dealer: {dealerPoints} | Player: {playerPoints}");
+
+            if (gameResult.Contains("Wins"))
+            {
+                bool playerWon = gameResult.Contains("Player Wins");
+                gameManager?.CompleteRound(playerWon, winAmount);
+            }
+        }
 
         public void GetRandomRules()
         {
+            rules = new SecretRule[4];
+
             rules[0] = new SecretRule
             {
                 effectType = RuleEffect.HoldEffect,
@@ -465,6 +529,8 @@ namespace CardGame
                     SecretRule.DrawEffectNum),
                 triggeredRank = (Card.Ranks)UnityEngine.Random.Range((int)Card.Ranks.Two, (int)Card.Ranks.Ace + 1)
             };
+
+            Debug.Log($"New rules generated for round {gameManager?.CurrentRound}");
         }
 
         public void Restart()
@@ -480,6 +546,6 @@ namespace CardGame
             dealerHands.InitializeHands();
         }
 
-        #endregion
-    }
-}
+        #endregion // End of last region (probably Utility Methods)
+    } // End of BlackjackController class
+} // End of CardGame namespace
