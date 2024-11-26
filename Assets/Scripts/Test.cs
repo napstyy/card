@@ -15,7 +15,7 @@ public class Test : MonoBehaviour
 
     public void UpdateChips(int newValue)
     {
-        ownedChips= newValue;
+        ownedChips = newValue;
         OnChipsUpdate?.Invoke(newValue);
     }
 }

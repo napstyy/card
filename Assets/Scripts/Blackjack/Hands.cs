@@ -27,14 +27,12 @@ namespace CardGame
         private int _selectedCardIndex = -1;
         private bool _hideFirstCard;
         private bool _isAnimating;
-        private SimpleUIController _simpleUIController;
+        private UIController _uiController;
         private Action _updateSelectedCardsHandler;
 
         private void Start()
         {
-            _simpleUIController = FindObjectOfType<SimpleUIController>();
-            _simpleUIController.DisableReplaceButton();
-
+            _uiController = FindAnyObjectByType<UIController>();
             _updateSelectedCardsHandler = () =>
             {
                 if (BlackjackController.Instance.selectedHands != this && _selectedCardIndex >= 0)
@@ -114,7 +112,7 @@ namespace CardGame
             cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
             {
                 _isAnimating = false;
-                _simpleUIController.DisableReplaceButton();
+                _uiController.DisableReplaceButton();
             });
         }
 
@@ -133,7 +131,7 @@ namespace CardGame
             cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() =>
             {
                 _isAnimating = false;
-                _simpleUIController.EnableReplaceButton();
+                _uiController.EnableReplaceButton();
             });
         }
 
@@ -153,7 +151,7 @@ namespace CardGame
                 _cardObjectsList[_selectedCardIndex].Instantiate(card);
                 UpdateHands();
                 _selectedCardIndex = -1;
-                _simpleUIController.DisableReplaceButton();
+                _uiController.DisableReplaceButton();
                 return true;
             }
             return false;
@@ -233,7 +231,7 @@ namespace CardGame
                 selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
                 {
                     _isAnimating = false;
-                    _simpleUIController.DisableReplaceButton();
+                    _uiController.DisableReplaceButton();
                 });
             }
             _selectedCardIndex = -1;

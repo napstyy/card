@@ -6,8 +6,8 @@ namespace CardGame
 {
     [Serializable]
     public class Deck {
-        List<Card> remainCards;
-        List<Card> removedCards;
+        private List<Card> remainCards;
+        private List<Card> removedCards;
         
         public Deck(int numOfDecks)
         {

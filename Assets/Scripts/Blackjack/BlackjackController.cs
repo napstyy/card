@@ -60,6 +60,10 @@ namespace CardGame
 
         #endregion
 
+        #region Event
+            public event Action<RoundState> RoundStateChanged;
+        #endregion
+
         #region Public Variables
 
         [Header("Game Objects")]
@@ -71,6 +75,8 @@ namespace CardGame
         public List<Hands> playerHands;
         public Hands dealerHands;
         public Hands selectedHands;
+        public RoundState roundState{get; private set;}
+        public bool AllowSplit{get{return playerHands[0].IsPair() && !isSplit && !isDoubleDown;}}
 
         [Header("Secret Rules")]
         public SecretRule[] rules;
@@ -82,9 +88,8 @@ namespace CardGame
 
         #region Private Variables
 
-        private RoundState roundState;
-        private SimpleUIController simpleUIController;
         private Deck deck;
+        private Player player;
         private int bustLimit = 21;
         private bool reducePointsByHalf;
 
@@ -95,24 +100,15 @@ namespace CardGame
         private void Start()
         {
             rules = new SecretRule[4];
-            simpleUIController = FindObjectOfType<SimpleUIController>();
             roundState = RoundState.End;
             deck = new Deck(4);
-            InitializeUI();
+            player = FindAnyObjectByType<Player>();
+            RoundStateChanged?.Invoke(roundState);
         }
 
         #endregion
 
         #region Initialization Methods
-
-        private void InitializeUI()
-        {
-            simpleUIController.ShowBetsButtons();
-            simpleUIController.HideGameButtons();
-            simpleUIController.HidePlayerPointsText();
-            simpleUIController.DisableStartButton();
-        }
-
         public void StartOfRound()
         {
             if (playerHands.Count == 0) return;
@@ -129,11 +125,8 @@ namespace CardGame
             }
 
             DealInitialCards();
-
-            simpleUIController.HideBetsButtons();
-            simpleUIController.ShowGameButtons();
-            simpleUIController.ShowPlayerPointsText();
             roundState = RoundState.Start;
+            RoundStateChanged?.Invoke(roundState);
         }
 
         private void DealInitialCards()
@@ -263,8 +256,7 @@ namespace CardGame
                 switch (secretRule.id)
                 {
                     case 0:
-                        var test = FindObjectOfType<Test>();
-                        test.UpdateChips(test.ownedChips + hands.chips / 2);
+                        player.AddChips(hands.chips / 2);
                         break;
                     case 1:
                         bustLimit += 2;
@@ -295,8 +287,10 @@ namespace CardGame
             {
                 ResolveHands(hands);
             }
-
+            
+            player.totalBets = 0;
             roundState = RoundState.End;
+            RoundStateChanged?.Invoke(roundState);
         }
 
         private void DealerPlay()
@@ -316,18 +310,16 @@ namespace CardGame
             int playerPoints = CountPoints(hands);
             int dealerPoints = CountPoints(dealerHands);
 
-            var test = FindObjectOfType<Test>();
-
             if (playerPoints <= 21)
             {
                 if (dealerPoints > 21 || playerPoints > dealerPoints)
                 {
                     int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
-                    test.UpdateChips(test.ownedChips + hands.chips * multiplier * (int)bonus);
+                    player.AddChips(hands.chips * multiplier * (int)bonus);
                 }
                 else if (playerPoints == dealerPoints && dealerHands.cards.Count < 5)
                 {
-                    test.UpdateChips(test.ownedChips + hands.chips);
+                    player.AddChips(hands.chips);
                 }
             }
 
@@ -383,27 +375,21 @@ namespace CardGame
 
         public void Bet(int chips)
         {
-            var test = FindObjectOfType<Test>();
-            if (chips > test.ownedChips) return;
+            if (chips > player.ownedChips) return;
 
             playerHands[0].chips += chips;
-            test.UpdateChips(test.ownedChips - chips);
-            simpleUIController.UpdateBetText(playerHands[0].chips);
-
-            if (playerHands[0].chips > 0 && roundState == RoundState.End)
-            {
-                simpleUIController.EnableStartButton();
-            }
+            player.AddBets(chips);
+            player.RemoveChips(chips);
         }
 
         public void DoubleDown()
         {
-            var test = FindObjectOfType<Test>();
-            if (test.ownedChips < playerHands[0].chips || roundState == RoundState.End || isSplit) return;
+            if (player.ownedChips < playerHands[0].chips || roundState == RoundState.End || isSplit) return;
 
             isDoubleDown = true;
             playerHands[0].ResetSelectedCard();
-            test.UpdateChips(test.ownedChips - playerHands[0].chips);
+            player.RemoveChips(playerHands[0].chips);
+            player.AddBets(playerHands[0].chips);
             playerHands[0].chips *= 2;
             playerHands[0].AddCardToHands(deck.DrawCard());
 
@@ -417,13 +403,13 @@ namespace CardGame
 
         public void Split()
         {
-            var test = FindObjectOfType<Test>();
-            if (test.ownedChips < playerHands[0].chips || roundState == RoundState.End || !playerHands[0].IsPair() || isSplit) return;
+            if (player.ownedChips < playerHands[0].chips || roundState == RoundState.End || !playerHands[0].IsPair() || isSplit) return;
 
             isSplit = true;
             Hands newHands = playerHands[0].Split();
             playerHands.Add(newHands);
-            test.UpdateChips(test.ownedChips - playerHands[0].chips);
+            player.RemoveChips(playerHands[0].chips);
+            player.AddBets(playerHands[0].chips);
 
             foreach (var hands in playerHands)
             {
@@ -492,8 +478,6 @@ namespace CardGame
 
             playerHands[0].InitializeHands();
             dealerHands.InitializeHands();
-
-            InitializeUI();
         }
 
         #endregion
