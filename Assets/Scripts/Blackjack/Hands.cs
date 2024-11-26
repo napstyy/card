@@ -208,7 +208,7 @@ namespace CardGame
                 SpriteRenderer spriteRenderer = child.GetComponent<SpriteRenderer>();
 
                 child.localPosition = new Vector3((i - _cardObjectsList.Count / 2f) * spacing, 0f, 0f);
-                spriteRenderer.sortingOrder = i;
+                spriteRenderer.sortingOrder = i*2;
 
                 if (_hideFirstCard && i == 0 || hideCards)
                 {
@@ -242,6 +242,12 @@ namespace CardGame
         public void SetHands(List<Card> cards)
         {
             this.cards = cards;
+            UpdateHands();
+        }
+
+        public void ResetExtraPoints()
+        {
+            extraPoints = 0;
             UpdateHands();
         }
 

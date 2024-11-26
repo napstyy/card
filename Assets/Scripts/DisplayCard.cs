@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CardGame
 {
@@ -7,6 +8,7 @@ namespace CardGame
     {
 
         public event Action OnCardClicked;
+        public GameObject specialStar;
         SpriteRenderer m_spriteRenderer;
         Card.Ranks rank;
         Card.Suits suit;
@@ -17,16 +19,19 @@ namespace CardGame
             m_spriteRenderer = GetComponent<SpriteRenderer>();
             rank = card.rank;
             suit = card.suit;
+            specialStar.SetActive(card.isSecretCard);
         }
 
         public void HideCard()
         {
             m_spriteRenderer.sprite = CardSpriteReference.Instance.GetCardBack();
+            specialStar.GetComponent<SortingGroup>().sortingOrder = 0;
         }
 
         public void ShowCard()
         {
             m_spriteRenderer.sprite = CardSpriteReference.Instance.GetCardSprite(rank, suit);
+            specialStar.GetComponent<SortingGroup>().sortingOrder = GetComponent<SpriteRenderer>().sortingOrder + 1;
         }
 
         // void Update()

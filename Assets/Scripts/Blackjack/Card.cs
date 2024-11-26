@@ -31,11 +31,13 @@ namespace CardGame
 
         public Ranks rank;
         public Suits suit;
+        public bool isSecretCard;
 
-        public Card(Ranks ranks, Suits suit)
+        public Card(Ranks rank, Suits suit, bool isSecretCard)
         {
-            this.rank = ranks;
+            this.rank = rank;
             this.suit = suit;
+            this.isSecretCard = isSecretCard;
         }
     }
 }

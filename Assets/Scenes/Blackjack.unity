@@ -447,6 +447,7 @@ MonoBehaviour:
   playerRole: 0
   spacing: 1
   chips: 0
+  hideCards: 0
 --- !u!1 &420366488
 GameObject:
   m_ObjectHideFlags: 0
@@ -2956,6 +2957,7 @@ MonoBehaviour:
   - {fileID: 119045967}
   dealerHands: {fileID: 298028781}
   selectedHands: {fileID: 0}
+  rules: []
   carddrop: {fileID: 0}
 --- !u!4 &1789771424
 Transform:
