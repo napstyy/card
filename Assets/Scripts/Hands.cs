@@ -21,6 +21,7 @@ namespace CardGame
         public float spacing = 1f;
         public int chips;
         public int extraPoints { get; private set; }
+        public bool hideCards;
 
         private List<DisplayCard> _cardObjectsList;
         private int _selectedCardIndex = -1;
@@ -209,7 +210,7 @@ namespace CardGame
                 child.localPosition = new Vector3((i - _cardObjectsList.Count / 2f) * spacing, 0f, 0f);
                 spriteRenderer.sortingOrder = i;
 
-                if (_hideFirstCard && i == 0)
+                if (_hideFirstCard && i == 0 || hideCards)
                 {
                     card.HideCard();
                 }
