@@ -5,7 +5,8 @@ using UnityEngine.UI;
 
 public class OptionUIManager : MonoBehaviour
 {
-    public GameObject optionsMenu;
+    [SerializeField] private GameObject optionsMenu;
+    [SerializeField] private GameObject background;
     public GameObject backButton;
     [SerializeField] private Slider masterSlider;
     [SerializeField] private Slider musicSlider;
@@ -22,8 +23,8 @@ public class OptionUIManager : MonoBehaviour
     void Back()
     {
         // Close the options menu
-        Debug.Log("Back button clicked");
         optionsMenu.SetActive(false);
+        background.SetActive(false);
     }
 
     void SetMasterVolume(float volume)

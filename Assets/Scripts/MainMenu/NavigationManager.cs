@@ -9,6 +9,7 @@ public class NavigationManager : MonoBehaviour
     public GameObject exitButton;
 
     [SerializeField] private GameObject optionsMenu;
+    [SerializeField] private GameObject background;
 
     private const string gameScene = "Blackjack_UI_2";
 
@@ -29,6 +30,7 @@ public class NavigationManager : MonoBehaviour
     {
         // Open the options menu
         optionsMenu.SetActive(true);
+        background.SetActive(true);
     }
 
     void ExitGame()
