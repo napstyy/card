@@ -10,7 +10,7 @@ public class AudioManager : MonoBehaviour
     public AudioSource musicSource;
     public AudioSource sfxSource;
 
-    // public AudioMixer audioMixer;
+    public AudioMixer audioMixer;
 
     private void Awake()
     {
@@ -31,25 +31,23 @@ public class AudioManager : MonoBehaviour
         musicSource.Play(delay);
     }
 
-    public void PlayLoopingSFX(AudioClip sfxClip)
-    {
-        sfxSource.clip = sfxClip;
-        sfxSource.loop = true;
-        sfxSource.Play();
-    }
-
     public void PlaySFX(AudioClip sfxClip)
     {
         sfxSource.PlayOneShot(sfxClip);
     }
 
+    public void SetMasterVolume(float volume)
+    {
+        audioMixer.SetFloat("MasterVolume", volume);
+    }
+
     public void SetMusicVolume(float volume)
     {
-        musicSource.volume = volume;
+        audioMixer.SetFloat("MusicVolume", volume);
     }
 
     public void SetSFXVolume(float volume)
     {
-        sfxSource.volume = volume;
+        audioMixer.SetFloat("SFXVolume", volume);
     }
 }
