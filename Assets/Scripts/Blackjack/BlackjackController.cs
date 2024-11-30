@@ -94,7 +94,7 @@ namespace CardGame
 
         #region Private Variables
         private Deck deck;
-        private Player player;
+        private PlayerStats player;
         private int bustLimit = 21;
         private bool reducePointsByHalf;
         #endregion
@@ -105,7 +105,7 @@ namespace CardGame
             rules = new SecretRule[4];
             roundState = RoundState.End;
             deck = new Deck(4);
-            player = FindObjectOfType<Player>();
+            player = GameManager.Instance.PlayerStats;
 
             // Initialize playerHands if not already initialized
             if (playerHands == null || playerHands.Count == 0)
@@ -368,15 +368,29 @@ namespace CardGame
             }
         }
 
-        public void Bet(int chips)
+        public void ConfirmBet()
         {
-            if (chips > player.ownedChips ||
+            if (player.totalBets > player.ownedChips ||
                 gameManager.CurrentState != GameManager.GameState.Betting)
                 return;
 
-            playerHands[0].chips += chips;
-            player.AddBets(chips);
-            player.RemoveChips(chips);
+            playerHands[0].chips += player.totalBets;
+            player.RemoveChips(player.totalBets);
+        }
+
+        public void AddBets(int bets)
+        {
+            if (bets > player.ownedChips ||
+                gameManager.CurrentState != GameManager.GameState.Betting)
+                return;
+             player.AddBet(bets);
+        }
+
+        public void ResetBets()
+        {
+            if (gameManager.CurrentState != GameManager.GameState.Betting)
+                return;
+            player.ResetBets();
         }
 
         public void DoubleDown()
@@ -390,7 +404,7 @@ namespace CardGame
             isDoubleDown = true;
             playerHands[0].ResetSelectedCard();
             player.RemoveChips(playerHands[0].chips);
-            player.AddBets(playerHands[0].chips);
+            player.AddBet(playerHands[0].chips);
             playerHands[0].chips *= 2;
             playerHands[0].AddCardToHands(deck.DrawCard());
 
@@ -415,7 +429,7 @@ namespace CardGame
             Hands newHands = playerHands[0].Split();
             playerHands.Add(newHands);
             player.RemoveChips(playerHands[0].chips);
-            player.AddBets(playerHands[0].chips);
+            player.AddBet(playerHands[0].chips);
 
             foreach (var hands in playerHands)
             {

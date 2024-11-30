@@ -70,16 +70,6 @@ namespace CardGame
                 Destroy(gameObject);
             }
         }
-
-        private void OnDestroy()
-        {
-            if (playerComponent != null)
-            {
-                // Unsubscribe from events
-                Stats.OnChipsChanged -= playerComponent.HandleChipsChanged;
-                Stats.OnBetsChanged -= playerComponent.HandleBetsChanged;
-            }
-        }
         #endregion
 
         #region Settings
@@ -109,10 +99,9 @@ namespace CardGame
 
         // Core components
         private BlackjackController blackjackController;
-        private Player playerComponent;
 
         // Game data
-        public PlayerStats Stats { get; private set; }
+        public PlayerStats PlayerStats { get; private set; }
         public GameProgress Progress { get; private set; }
 
         public int CurrentRound => Progress.CurrentRound;
@@ -132,21 +121,13 @@ namespace CardGame
         private void InitializeReferences()
         {
             blackjackController = FindObjectOfType<BlackjackController>();
-            playerComponent = FindObjectOfType<Player>();
 
-            if (!blackjackController || !playerComponent)
+            if (!blackjackController)
             {
                 LogError("Required components not found!");
                 enabled = false;
                 return;
             }
-
-            // Use startingChips from inspector instead of Player component
-            Stats = new PlayerStats(startingChips);  // Changed from playerComponent.startingChips
-
-            // Initialize player with stats
-            playerComponent.InitializeWithStats(Stats);
-            SyncPlayerWithStats();
 
             // Connect game events
             OnGameStateChanged += HandleGameStateChange;
@@ -162,13 +143,13 @@ namespace CardGame
             {
                 case GameState.Preparation:
                     // Reset for new round
-                    Stats.ResetBets();
+                    PlayerStats.ResetBets();
                     Progress.ResetSwaps();
                     break;
 
                 case GameState.RoundEnd:
                     // Handle end of round cleanup
-                    if (Stats.ownedChips >= Progress.TargetMoney)
+                    if (PlayerStats.ownedChips >= Progress.TargetMoney)
                     {
                         EndGame(true);
                     }
@@ -191,14 +172,14 @@ namespace CardGame
         // Add this method to handle shop purchases
         public bool TryPurchaseItem(int itemId, int cost)
         {
-            if (!Stats.CanAfford(cost))
+            if (!PlayerStats.CanAfford(cost))
             {
                 LogDebug("Cannot afford item");
                 return false;
             }
 
-            Stats.RemoveChips(cost);
-            Stats.OwnedItems.Add(itemId);
+            PlayerStats.RemoveChips(cost);
+            PlayerStats.OwnedItems.Add(itemId);
             LogDebug($"Purchased item {itemId} for {cost} chips");
             return true;
         }
@@ -208,6 +189,7 @@ namespace CardGame
         {
             Progress = new GameProgress(maxRounds, targetMoney, swapsPerRound);
             IsGameActive = true;
+            PlayerStats = new PlayerStats(startingChips);  // Changed from playerComponent.startingChips
             // Remove Stats initialization from here as it's done in InitializeReferences
         }
 
@@ -216,13 +198,6 @@ namespace CardGame
             InitializeGame();
             StartNewRound();
         }
-
-        private void SyncPlayerWithStats()
-        {
-            // Connect PlayerStats events to Player component
-            Stats.OnChipsChanged += (chips) => playerComponent.UpdateChips(chips);
-            Stats.OnBetsChanged += (bets) => playerComponent.AddBets(bets);
-        }
         #endregion
 
         #region Game Flow Control
@@ -230,7 +205,7 @@ namespace CardGame
         {
             if (!IsGameActive || Progress.IsLastRound())
             {
-                EndGame(Stats.ownedChips >= Progress.TargetMoney);
+                EndGame(PlayerStats.ownedChips >= Progress.TargetMoney);
                 return;
             }
 
@@ -304,7 +279,7 @@ namespace CardGame
 
         private void HandleRoundEndPhase()
         {
-            if (Stats.ownedChips >= Progress.TargetMoney)
+            if (PlayerStats.ownedChips >= Progress.TargetMoney)
             {
                 EndGame(true);
                 return;
@@ -317,7 +292,7 @@ namespace CardGame
         private void HandleGameOverPhase()
         {
             IsGameActive = false;
-            LogDebug($"Game Over - Player {(Stats.ownedChips >= Progress.TargetMoney ? "Won" : "Lost")}");
+            LogDebug($"Game Over - Player {(PlayerStats.ownedChips >= Progress.TargetMoney ? "Won" : "Lost")}");
         }
         #endregion
 
@@ -341,7 +316,7 @@ namespace CardGame
 
         public void CompleteBetting()
         {
-            if (CurrentState == GameState.Betting && Stats.totalBets > 0)
+            if (CurrentState == GameState.Betting && PlayerStats.totalBets > 0)
             {
                 SetGameState(GameState.Playing);
             }
@@ -351,14 +326,14 @@ namespace CardGame
         {
             if (playerWon)
             {
-                Stats.AddChips(winAmount);
+                PlayerStats.AddChips(winAmount);
             }
 
-            Stats.ResetBets();
+            PlayerStats.ResetBets();
 
-            if (Stats.ownedChips >= Progress.TargetMoney || Progress.IsLastRound())
+            if (PlayerStats.ownedChips >= Progress.TargetMoney || Progress.IsLastRound())
             {
-                EndGame(Stats.ownedChips >= Progress.TargetMoney);
+                EndGame(PlayerStats.ownedChips >= Progress.TargetMoney);
             }
             else
             {
