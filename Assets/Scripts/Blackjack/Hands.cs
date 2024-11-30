@@ -79,6 +79,21 @@ namespace CardGame
             DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
             int index = cards.Count;
 
+            // Calculate start and end positions
+            Vector3 startPos = transform.position + Vector3.right * 10f; // Starting position off-screen
+            Vector3 targetPos = transform.position + new Vector3((index - cards.Count / 2f) * spacing, 0f, 0f);
+
+            // Start the draw animation
+            if (CardAnimationSystem.Instance != null)
+            {
+                CardAnimationSystem.Instance.AnimateCardDraw(
+                    cardObject,
+                    startPos,
+                    targetPos,
+                    playerRole != Role.Dealer || index != 0
+                );
+            }
+
             if (playerRole == Role.Player)
             {
                 displayCard.OnCardClicked += () => HandleCardClick(cardObject, index);
@@ -89,7 +104,6 @@ namespace CardGame
             _cardObjectsList.Add(displayCard);
             UpdateHands();
         }
-
         private void HandleCardClick(GameObject cardObject, int index)
         {
             if (_isAnimating) return;
@@ -167,12 +181,12 @@ namespace CardGame
             _cardObjectsList.RemoveAt(index);
             removeCard.transform.SetParent(null);
             ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, removeCard);
-            for(int i = 0; i < cards.Count; i++)
+            for (int i = 0; i < cards.Count; i++)
             {
                 if (playerRole == Role.Player)
                 {
                     DisplayCard displayCard = _cardObjectsList[i];
-                    displayCard.RemoveEvent();  
+                    displayCard.RemoveEvent();
                     displayCard.OnCardClicked += () => HandleCardClick(displayCard.gameObject, i);
                 }
             }
@@ -207,7 +221,7 @@ namespace CardGame
                 SpriteRenderer spriteRenderer = child.GetComponent<SpriteRenderer>();
 
                 child.localPosition = new Vector3((i - _cardObjectsList.Count / 2f) * spacing, 0f, 0f);
-                spriteRenderer.sortingOrder = i*2;
+                spriteRenderer.sortingOrder = i * 2;
 
                 if (_hideFirstCard && i == 0 || hideCards)
                 {
