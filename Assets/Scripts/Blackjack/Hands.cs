@@ -70,6 +70,7 @@ namespace CardGame
             _selectedCardIndex = -1;
             cards.Clear();
             _cardObjectsList.Clear();
+            OnHandsUpdate?.Invoke(-1);
         }
 
         public void AddCardToHands(Card card)

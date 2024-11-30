@@ -52,12 +52,16 @@ namespace CardGame
         public void AddBet(int value)
         {
             if (value <= 0) return;
-            if (value > ownedChips) return;
+            if (totalBets > ownedChips) return;
 
             totalBets += value;
-            ownedChips -= value;
             OnBetsChanged?.Invoke(totalBets);
-            OnChipsChanged?.Invoke(ownedChips);
+        }
+
+        public void PayBet()
+        {
+            if (totalBets == 0 || totalBets > ownedChips) return;
+            RemoveChips(totalBets);
         }
 
         public void ResetBets()

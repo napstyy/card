@@ -15,7 +15,7 @@ public class HandsUIController : MonoBehaviour
         hitButton.onClick.AddListener(()=>BlackjackController.Instance.Hit(hands));
         GetComponent<Canvas>().worldCamera = Camera.main;
         hands.OnHandsUpdate += (int points) => {
-            pointsText.SetText(points.ToString());
+            pointsText.SetText(points == -1? "":points.ToString());
         };
     }
 

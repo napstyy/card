@@ -19,10 +19,11 @@ public class UIController : MonoBehaviour
     [SerializeField] TextMeshProUGUI chipsText;
     [SerializeField] TextMeshProUGUI betsText;
     [SerializeField] GameObject betsButtons;
-    [SerializeField] Button startButton;
+    [SerializeField] Button confirmBetsButton;
+    [SerializeField] Button resetBetsButton;
 
     [Header("Others")]
-    [SerializeField] GameObject confirmButton;
+    [SerializeField] Button confirmButton;
     [SerializeField] Button startGameButton;
 
     private PlayerStats player;
@@ -30,12 +31,28 @@ public class UIController : MonoBehaviour
     private void Start()
     {
         GameManager.Instance.OnGameStateChanged += GameStateChangedHandler;
+        BlackjackController.Instance.OnRoundStateChanged += RoundStateChangedHandler;
         player = GameManager.Instance.PlayerStats;
         player.OnChipsChanged += UpdateChipsText;
         player.OnBetsChanged += UpdateBetsText;
+        confirmButton.onClick.AddListener(() => GameManager.Instance.CompleteRound());
         startGameButton.onClick.AddListener(() => GameManager.Instance.SetGameState(GameManager.GameState.Betting));
         UpdateChipsText(player.ownedChips);
         UpdateBetsText(player.totalBets);
+    }
+
+    private void RoundStateChangedHandler(BlackjackController.RoundState state)
+    {
+        if(GameManager.Instance.CurrentState == GameManager.GameState.Playing)
+            switch(state)
+            {
+                case BlackjackController.RoundState.Start:
+                    confirmButton.gameObject.SetActive(false);
+                break;
+                case BlackjackController.RoundState.End:
+                    confirmButton.gameObject.SetActive(true);
+                break;
+            }
     }
 
     private void GameStateChangedHandler(GameManager.GameState state)
@@ -45,6 +62,7 @@ public class UIController : MonoBehaviour
             case GameManager.GameState.Preparation:
                 betsButtons.SetActive(false);
                 actionButtons.SetActive(false);
+                confirmButton.gameObject.SetActive(false);
             break;
             case GameManager.GameState.Betting:
                 betsButtons.SetActive(true);
@@ -57,6 +75,7 @@ public class UIController : MonoBehaviour
             case GameManager.GameState.Shopping:
                 betsButtons.SetActive(false);
                 actionButtons.SetActive(false);
+                confirmButton.gameObject.SetActive(false);
             break;
             case GameManager.GameState.RoundEnd:
 
@@ -64,9 +83,7 @@ public class UIController : MonoBehaviour
         }
     }
 
-    private void Update() {
 
-    }
 
     void UpdateChipsText(int newValue)
     {
@@ -111,12 +128,14 @@ public class UIController : MonoBehaviour
     public void EnableBets()
     {
         betsButtons.SetActive(true);
-        startButton.gameObject.SetActive(true);
+        confirmBetsButton.gameObject.SetActive(true);
+        resetBetsButton.gameObject.SetActive(true);
     }
 
     public void DisableBets()
     {
         betsButtons.SetActive(false);
-        startButton.gameObject.SetActive(false);
+        confirmBetsButton.gameObject.SetActive(false);
+        resetBetsButton.gameObject.SetActive(false);
     }
 }

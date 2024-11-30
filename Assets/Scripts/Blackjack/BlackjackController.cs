@@ -69,7 +69,7 @@ namespace CardGame
         #endregion
 
         #region Events
-        public event Action<RoundState> RoundStateChanged;
+        public event Action<RoundState> OnRoundStateChanged;
         #endregion
 
         #region Public Variables
@@ -116,7 +116,7 @@ namespace CardGame
                 playerHands.Add(hands);
             }
 
-            RoundStateChanged?.Invoke(roundState);
+            OnRoundStateChanged?.Invoke(roundState);
         }
         #endregion
 
@@ -125,9 +125,6 @@ namespace CardGame
         {
             switch (newState)
             {
-                case GameManager.GameState.Playing:
-                    StartOfRound();
-                    break;
                 case GameManager.GameState.Preparation:
                     PrepareForNewRound();
                     break;
@@ -164,7 +161,7 @@ namespace CardGame
 
             DealInitialCards();
             roundState = RoundState.Start;
-            RoundStateChanged?.Invoke(roundState);
+            OnRoundStateChanged?.Invoke(roundState);
         }
 
         private void DealInitialCards()
@@ -325,9 +322,7 @@ namespace CardGame
 
             player.ResetBets();  // Changed this line
             roundState = RoundState.End;
-            RoundStateChanged?.Invoke(roundState);
-
-            gameManager?.CompleteRound();
+            OnRoundStateChanged?.Invoke(roundState);
         }
 
         public void Replace()
@@ -375,12 +370,13 @@ namespace CardGame
                 return;
 
             playerHands[0].chips += player.totalBets;
-            player.RemoveChips(player.totalBets);
+            player.PayBet();
+            gameManager.SetGameState(GameManager.GameState.Playing);
         }
 
         public void AddBets(int bets)
         {
-            if (bets > player.ownedChips ||
+            if (bets + player.totalBets > player.ownedChips ||
                 gameManager.CurrentState != GameManager.GameState.Betting)
                 return;
              player.AddBet(bets);
@@ -475,10 +471,9 @@ namespace CardGame
             TriggerHoldEffect(hands, out float bonus);
             int playerPoints = CountPoints(hands);
             int dealerPoints = CountPoints(dealerHands);
-            int winAmount = 0;
-
             if (playerPoints <= 21)
             {
+                int winAmount;
                 if (dealerPoints > 21 || playerPoints > dealerPoints)
                 {
                     int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
@@ -493,10 +488,10 @@ namespace CardGame
             }
 
             hands.chips = 0;
-            DisplayGameResult(playerPoints, dealerPoints, winAmount);
+            DisplayGameResult(playerPoints, dealerPoints);
         }
 
-        private void DisplayGameResult(int playerPoints, int dealerPoints, int winAmount)
+        private void DisplayGameResult(int playerPoints, int dealerPoints)
         {
             string gameResult = playerPoints > 21 ? "Dealer Wins!"
                 : dealerPoints > 21 ? "Player Wins!"
@@ -505,12 +500,6 @@ namespace CardGame
                 : "Tie";
 
             Debug.Log($"{gameResult} Dealer: {dealerPoints} | Player: {playerPoints}");
-
-            if (gameResult.Contains("Wins"))
-            {
-                bool playerWon = gameResult.Contains("Player Wins");
-                gameManager?.CompleteRound(playerWon, winAmount);
-            }
         }
 
         public void GetRandomRules()
