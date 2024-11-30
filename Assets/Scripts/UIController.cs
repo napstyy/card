@@ -23,56 +23,49 @@ public class UIController : MonoBehaviour
 
     [Header("Others")]
     [SerializeField] GameObject confirmButton;
+    [SerializeField] Button startGameButton;
 
-    private Player player;
+    private PlayerStats player;
 
     private void Start()
     {
-        BlackjackController.Instance.RoundStateChanged += RoundStateChanged;
-        player = FindAnyObjectByType<Player>();
-        player.OnChipsUpdate += UpdateChipsText;
+        GameManager.Instance.OnGameStateChanged += GameStateChangedHandler;
+        player = GameManager.Instance.PlayerStats;
+        player.OnChipsChanged += UpdateChipsText;
         player.OnBetsChanged += UpdateBetsText;
+        startGameButton.onClick.AddListener(() => GameManager.Instance.SetGameState(GameManager.GameState.Betting));
         UpdateChipsText(player.ownedChips);
         UpdateBetsText(player.totalBets);
     }
 
-    private void Update() {
-        if (BlackjackController.Instance.roundState == BlackjackController.RoundState.Start)
+    private void GameStateChangedHandler(GameManager.GameState state)
+    {
+        switch(state)
         {
-            if(BlackjackController.Instance.isSplit || BlackjackController.Instance.isDoubleDown)
-            {
-                DisableDoubleDownButton();
-                DisableSplitButton();
-            }
-            else
-            {   
-                EnableDoubleDownButton();
-                if(BlackjackController.Instance.AllowSplit)
-                {
-                    EnableSplitButton();
-                }
-            }
-        }
-        else
-        {
-            startButton.interactable = player.totalBets > 0;
+            case GameManager.GameState.Preparation:
+                betsButtons.SetActive(false);
+                actionButtons.SetActive(false);
+            break;
+            case GameManager.GameState.Betting:
+                betsButtons.SetActive(true);
+                actionButtons.SetActive(false);
+            break;
+            case GameManager.GameState.Playing:
+                betsButtons.SetActive(false);
+                actionButtons.SetActive(true);
+            break;
+            case GameManager.GameState.Shopping:
+                betsButtons.SetActive(false);
+                actionButtons.SetActive(false);
+            break;
+            case GameManager.GameState.RoundEnd:
+
+            break;
         }
     }
 
-    private void RoundStateChanged(BlackjackController.RoundState state)
-    {
-        if(state == BlackjackController.RoundState.Start)
-        {
-            actionButtons.SetActive(true);
-            confirmButton.SetActive(false);
-            DisableBets();
-        }
-        else
-        {
-            actionButtons.SetActive(false);
-            confirmButton.SetActive(true);
-            EnableBets();
-        }
+    private void Update() {
+
     }
 
     void UpdateChipsText(int newValue)

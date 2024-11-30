@@ -13,25 +13,23 @@ public class HandsUIController : MonoBehaviour
     private void Start() {
         hands = transform.root.GetComponent<Hands>();
         hitButton.onClick.AddListener(()=>BlackjackController.Instance.Hit(hands));
-        BlackjackController.Instance.RoundStateChanged += HitButtonHandler;
         GetComponent<Canvas>().worldCamera = Camera.main;
         hands.OnHandsUpdate += (int points) => {
             pointsText.SetText(points.ToString());
         };
     }
 
-    private void OnDisable() {
-        BlackjackController.Instance.RoundStateChanged -= HitButtonHandler;
+    private void Update() {
+        if(GameManager.Instance.CurrentState != GameManager.GameState.Playing && hitButton.gameObject.activeSelf)
+        {
+            DisableHitButton();
+        }
+        else if(GameManager.Instance.CurrentState == GameManager.GameState.Playing)
+        {
+            EnableHitButton();
+        }
     }
     
-    private void HitButtonHandler(BlackjackController.RoundState state)
-    {
-        if(state == BlackjackController.RoundState.Start)
-            EnableHitButton();
-        else
-            DisableHitButton();
-    }
-
     private void EnableHitButton()
     {
         hitButton.gameObject.SetActive(true);
