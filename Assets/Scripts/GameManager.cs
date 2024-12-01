@@ -63,7 +63,6 @@ namespace CardGame
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
-                InitializeGame();
             }
             else
             {
@@ -190,6 +189,7 @@ namespace CardGame
             Progress = new GameProgress(maxRounds, targetMoney, swapsPerRound);
             IsGameActive = true;
             PlayerStats = new PlayerStats(startingChips);  // Changed from playerComponent.startingChips
+            FindAnyObjectByType<UIController>()?.BindTextWithPlayer(PlayerStats);
             // Remove Stats initialization from here as it's done in InitializeReferences
         }
 
