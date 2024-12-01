@@ -329,7 +329,7 @@ namespace CardGame
         public void Replace()
         {
             if (roundState == RoundState.End ||
-                gameManager.CurrentState != GameManager.GameState.Preparation ||
+                gameManager.CurrentState != GameManager.GameState.Playing ||
                 !gameManager.TryUseCardSwap())
                 return;
 

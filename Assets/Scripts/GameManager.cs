@@ -301,7 +301,7 @@ namespace CardGame
         #region Public Methods
         public bool TryUseCardSwap()
         {
-            if (CurrentState != GameState.Preparation || !Progress.HasSwapsRemaining())
+            if (!Progress.HasSwapsRemaining())
                 return false;
 
             Progress.UseSwap();
