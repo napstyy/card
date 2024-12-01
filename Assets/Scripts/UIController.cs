@@ -27,11 +27,13 @@ public class UIController : MonoBehaviour
 
     [Header("Others")]
     [SerializeField] Button confirmButton;
-    [SerializeField] Button startGameButton;
+    [SerializeField] TextMeshProUGUI targetMoneyText;
+    [SerializeField] TextMeshProUGUI remainingRoundsText;
 
     [Header("Options")]
     [SerializeField] Button optionsButton;
     [SerializeField] OptionUIManager optionsMenu;
+
 
     private PlayerStats player;
 
@@ -39,6 +41,7 @@ public class UIController : MonoBehaviour
     {
         GameManager.Instance.OnGameStateChanged += GameStateChangedHandler;
         BlackjackController.Instance.OnRoundStateChanged += RoundStateChangedHandler;
+        targetMoneyText.SetText($"{GameManager.Instance.TargetMoney}");
         optionsMenu = FindObjectOfType<OptionUIManager>();
         GameObject canvas = optionsMenu.transform.root.gameObject;
         Canvas canvasComponent = canvas.GetComponent<Canvas>();
@@ -53,8 +56,11 @@ public class UIController : MonoBehaviour
             canvasComponent.worldCamera = Camera.main;
         }
         confirmButton.onClick.AddListener(() => GameManager.Instance.CompleteRound());
-        startGameButton.onClick.AddListener(() => GameManager.Instance.SetGameState(GameManager.GameState.Betting));
         optionsButton.onClick.AddListener(() => optionsMenu.OpenOptions());
+    }
+
+    private void Update() {
+        remainingRoundsText.SetText($"{GameManager.Instance.CurrentRound}/{GameManager.Instance.MaxRounds}");
     }
 
     private void RoundStateChangedHandler(BlackjackController.RoundState state)
@@ -105,7 +111,7 @@ public class UIController : MonoBehaviour
     void UpdateChipsText(int newValue)
     {
         Debug.Log("Chips Changed");
-        chipsText.SetText(newValue.ToString());
+        chipsText.SetText("<sprite name=\"chips\"> "+newValue.ToString());
     }
 
     void UpdateBetsText(int newValue)

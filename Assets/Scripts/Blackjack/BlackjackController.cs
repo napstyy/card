@@ -374,8 +374,8 @@ namespace CardGame
 
             playerHands[0].chips += player.totalBets;
             player.PayBet();
-            AudioManager.Instance.PlaySFX(betChips);
             gameManager.SetGameState(GameManager.GameState.Playing);
+            AudioManager.Instance.PlaySFX(betChips);
         }
 
         public void AddBets(int bets)
