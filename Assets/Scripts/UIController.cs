@@ -13,7 +13,7 @@ public class UIController : MonoBehaviour
     [SerializeField] Button doubleDownButton;
     [SerializeField] Button replaceButton;
     [SerializeField] Button standButton;
-    [SerializeField] Button splitButton;
+    // [SerializeField] Button splitButton;
 
     [Header("Bet and Chips")]
     [SerializeField] TextMeshProUGUI chipsText;
@@ -148,12 +148,12 @@ public class UIController : MonoBehaviour
 
     public void EnableSplitButton()
     {
-        splitButton.gameObject.SetActive(true);
+        // splitButton.gameObject.SetActive(true);
     }
 
     public void DisableSplitButton()
     {
-        splitButton.gameObject.SetActive(false);
+        // splitButton.gameObject.SetActive(false);
     }
 
     public void EnableReplaceButton()

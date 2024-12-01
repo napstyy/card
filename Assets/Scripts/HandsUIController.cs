@@ -49,11 +49,11 @@ public class HandsUIController : MonoBehaviour
 
     private void EnableBackground()
     {
-        background.gameObject.SetActive(true);
+        background?.gameObject.SetActive(true);
     }
 
     private void DisableBackground()
     {
-        background.gameObject.SetActive(false);
+        background?.gameObject.SetActive(false);
     }
 }
