@@ -327,6 +327,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitButton: {fileID: 2701799010643103738}
+  background: {fileID: 1670931337782084703}
   pointsText: {fileID: 7803914363303106587}
 --- !u!1 &4584887056765521621
 GameObject:
@@ -378,13 +379,12 @@ MonoBehaviour:
   playerYPosition: -0.3
   animationDuration: 0.3
   selectionOffset: 0.5
-  cardSlide: {fileID: 8300000, guid: e6dedf6087ca1124eb06c068524f4daa, type: 3}
+  cardSlide1: {fileID: 8300000, guid: aa9cb8da27cad8049a3a98eedd83594a, type: 3}
+  cardSlide2: {fileID: 8300000, guid: c99723ce4809e2142b8558a569e8c764, type: 3}
   playerRole: 1
   chips: 0
   extraPoints: 0
   hideCards: 0
-  cardSlide1: {fileID: 8300000, guid: aa9cb8da27cad8049a3a98eedd83594a, type: 3}
-  cardSlide2: {fileID: 8300000, guid: c99723ce4809e2142b8558a569e8c764, type: 3}
 --- !u!1 &7034622559702622761
 GameObject:
   m_ObjectHideFlags: 0
