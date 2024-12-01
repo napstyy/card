@@ -11,7 +11,7 @@ public class NavigationManager : MonoBehaviour
     [SerializeField] private GameObject optionsMenu;
     [SerializeField] private GameObject background;
 
-    private const string gameScene = "Blackjack_UI_2";
+    private const string gameScene = "GameScene";
 
     void Start()
     {
