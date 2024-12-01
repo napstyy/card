@@ -34,6 +34,21 @@ namespace CardGame
         #region Singleton Implementation
         public static BlackjackController Instance { get; private set; }
 
+        // Add these fields to your existing BlackjackController class
+        private bool burstPreventionEnabled = false;
+        private int bonusMultiplier = 1;
+        public Deck deck { get; private set; }  // Make it accessible but protected  // Make deck accessible but protected
+
+        public void EnableBurstPrevention()
+        {
+            burstPreventionEnabled = true;
+        }
+
+        public void SetBonusMultiplier(int multiplier)
+        {
+            bonusMultiplier = Mathf.Max(1, multiplier);
+        }
+
         private void Awake()
         {
             if (Instance == null)
@@ -357,12 +372,22 @@ namespace CardGame
             if (CountPoints(hands) > 21 || roundState == RoundState.End) return;
 
             Card newCard = deck.DrawCard();
+
+            // Check if this hit would cause a burst and burst prevention is active
+            int potentialPoints = CountPoints(hands) + GetCardPoint(newCard);
+            if (potentialPoints > 21 && burstPreventionEnabled)
+            {
+                burstPreventionEnabled = false;
+                player.AddChips(hands.chips); // Return bet
+                Stand(); // End the round
+                return;
+            }
+
             TriggerDrawEffect(newCard, hands);
             hands.AddCardToHands(newCard);
 
             if (playerHands.All(h => CountPoints(h) > 21))
             {
-                Debug.Log("Player Busted");
                 Stand();
             }
 
@@ -386,7 +411,7 @@ namespace CardGame
             if (bets + player.totalBets > player.ownedChips ||
                 gameManager.CurrentState != GameManager.GameState.Betting)
                 return;
-             player.AddBet(bets);
+            player.AddBet(bets);
         }
 
         public void ResetBets()
@@ -478,12 +503,16 @@ namespace CardGame
             TriggerHoldEffect(hands, out float bonus);
             int playerPoints = CountPoints(hands);
             int dealerPoints = CountPoints(dealerHands);
+
             if (playerPoints <= 21)
             {
-                int winAmount;
+                int winAmount = 0;
                 if (dealerPoints > 21 || playerPoints > dealerPoints)
                 {
+                    // Calculate win multiplier considering blackjack and bonus
                     int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
+                    multiplier *= bonusMultiplier;
+
                     winAmount = hands.chips * multiplier * (int)bonus;
                     player.AddChips(winAmount);
                 }
@@ -495,6 +524,7 @@ namespace CardGame
             }
 
             hands.chips = 0;
+            bonusMultiplier = 1; // Reset bonus multiplier after resolving
             DisplayGameResult(playerPoints, dealerPoints);
         }
 

@@ -72,6 +72,19 @@ namespace CardGame
         #endregion
 
         #region Item Management
+
+        // Add this method to your PlayerStats class
+        public int GetItemCount(int itemId)
+        {
+            return _ownedItems.Count(x => x == itemId);
+        }
+
+        // Add this method to check for multiple items
+        public bool HasItem(int itemId)
+        {
+            return _ownedItems.Contains(itemId);
+        }
+
         public void AddItem(int itemId)
         {
             _ownedItems.Add(itemId);
@@ -80,18 +93,12 @@ namespace CardGame
 
         public bool UseItem(int itemId)
         {
-            if (!_ownedItems.Contains(itemId)) return false;
+            if (!HasItem(itemId)) return false;
+
             _ownedItems.Remove(itemId);
             OnItemRemoved?.Invoke(itemId);
             return true;
         }
-
-        public bool HasItem(int itemId)
-        {
-            return _ownedItems.Contains(itemId);
-        }
-        #endregion
-
         public bool CanAfford(int amount) => ownedChips >= amount;
     }
 }
