@@ -54,15 +54,6 @@ namespace CardGame
         }
         #endregion
 
-        #region Unity Lifecycle
-
-        public List<Card> cards { get; private set; }
-        public Role playerRole = Role.Player;
-        public float spacing = 1f;
-        public int chips;
-        public int extraPoints { get; private set; }
-        public bool hideCards;
-
         private List<DisplayCard> _cardObjectsList;
         private int _selectedCardIndex = -1;
         private bool _hideFirstCard;
@@ -73,6 +64,7 @@ namespace CardGame
         [SerializeField] private AudioClip cardSlide1;
         [SerializeField] private AudioClip cardSlide2;
 
+        #region Unity Lifecycle
         private void Start()
         {
             Initialize();
