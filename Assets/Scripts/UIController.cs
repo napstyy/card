@@ -40,6 +40,18 @@ public class UIController : MonoBehaviour
         GameManager.Instance.OnGameStateChanged += GameStateChangedHandler;
         BlackjackController.Instance.OnRoundStateChanged += RoundStateChangedHandler;
         optionsMenu = FindObjectOfType<OptionUIManager>();
+        GameObject canvas = optionsMenu.transform.root.gameObject;
+        Canvas canvasComponent = canvas.GetComponent<Canvas>();
+        if (canvasComponent != null && canvasComponent.renderMode == RenderMode.ScreenSpaceCamera)
+        {
+            canvasComponent.worldCamera = Camera.main;
+            Debug.Log("Canvas set to world camera");
+        }
+        else
+        {
+            canvasComponent.renderMode = RenderMode.ScreenSpaceCamera;
+            canvasComponent.worldCamera = Camera.main;
+        }
         confirmButton.onClick.AddListener(() => GameManager.Instance.CompleteRound());
         startGameButton.onClick.AddListener(() => GameManager.Instance.SetGameState(GameManager.GameState.Betting));
         optionsButton.onClick.AddListener(() => optionsMenu.OpenOptions());

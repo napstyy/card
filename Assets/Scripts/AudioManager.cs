@@ -12,6 +12,8 @@ public class AudioManager : MonoBehaviour
 
     public AudioMixer audioMixer;
 
+    [SerializeField] private AudioClip buttonClick;
+
     private void Awake()
     {
         if (Instance == null)
@@ -49,5 +51,10 @@ public class AudioManager : MonoBehaviour
     public void SetSFXVolume(float volume)
     {
         audioMixer.SetFloat("SFXVolume", volume);
+    }
+
+    public void PlayButtonClick()
+    {
+        PlaySFX(buttonClick);
     }
 }

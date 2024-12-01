@@ -56,6 +56,7 @@ public class OptionUIManager : MonoBehaviour
 
     void Back()
     {
+        AudioManager.Instance.PlayButtonClick();
         optionsMenu.SetActive(false);
         background.SetActive(false);
     }

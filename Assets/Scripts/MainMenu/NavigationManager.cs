@@ -22,12 +22,14 @@ public class NavigationManager : MonoBehaviour
 
     void StartGame()
     {
+        AudioManager.Instance.PlayButtonClick();
         // Load the game scene
         UnityEngine.SceneManagement.SceneManager.LoadScene(gameScene);
     }
 
     void OpenOptions()
     {
+        AudioManager.Instance.PlayButtonClick();
         // Open the options menu
         optionsMenu.SetActive(true);
         background.SetActive(true);
@@ -35,6 +37,7 @@ public class NavigationManager : MonoBehaviour
 
     void ExitGame()
     {
+        AudioManager.Instance.PlayButtonClick();
         // Exit the application if it is a build, or stop play mode if in the editor
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
