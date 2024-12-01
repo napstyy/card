@@ -26,14 +26,20 @@ public class UIController : MonoBehaviour
     [SerializeField] Button confirmButton;
     [SerializeField] Button startGameButton;
 
+    [Header("Options")]
+    [SerializeField] Button optionsButton;
+    [SerializeField] OptionUIManager optionsMenu;
+
     private PlayerStats player;
 
     private void Start()
     {
         GameManager.Instance.OnGameStateChanged += GameStateChangedHandler;
         BlackjackController.Instance.OnRoundStateChanged += RoundStateChangedHandler;
+        optionsMenu = FindObjectOfType<OptionUIManager>();
         confirmButton.onClick.AddListener(() => GameManager.Instance.CompleteRound());
         startGameButton.onClick.AddListener(() => GameManager.Instance.SetGameState(GameManager.GameState.Betting));
+        optionsButton.onClick.AddListener(() => optionsMenu.OpenOptions());
     }
 
     private void RoundStateChangedHandler(BlackjackController.RoundState state)
@@ -77,8 +83,6 @@ public class UIController : MonoBehaviour
             break;
         }
     }
-
-
 
     void UpdateChipsText(int newValue)
     {
