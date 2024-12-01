@@ -38,6 +38,13 @@ public class OptionUIManager : MonoBehaviour
         }
     }
 
+    public void OpenOptions()
+    {
+        // Open the options menu
+        optionsMenu.SetActive(true);
+        background.SetActive(true);
+    }
+
     void Back()
     {
         // Close the options menu
