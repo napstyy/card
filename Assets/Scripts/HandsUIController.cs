@@ -2,41 +2,58 @@ using CardGame;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
-public class HandsUIController : MonoBehaviour 
+public class HandsUIController : MonoBehaviour
 {
     [SerializeField] Button hitButton;
+    [SerializeField] Image background;
     [SerializeField] TextMeshProUGUI pointsText;
 
     Hands hands;
 
-    private void Start() {
+    private void Start()
+    {
         hands = transform.root.GetComponent<Hands>();
-        hitButton.onClick.AddListener(()=>BlackjackController.Instance.Hit(hands));
+        hitButton.onClick.AddListener(() => BlackjackController.Instance.Hit(hands));
         GetComponent<Canvas>().worldCamera = Camera.main;
-        hands.OnHandsUpdate += (int points) => {
-            pointsText.SetText(points == -1? "":points.ToString());
+        hands.OnHandsUpdate += (int points) =>
+        {
+            pointsText.SetText(points == -1 ? "" : points.ToString());
         };
     }
 
-    private void Update() {
-        if(GameManager.Instance.CurrentState != GameManager.GameState.Playing && hitButton.gameObject.activeSelf)
+    private void Update()
+    {
+        if (GameManager.Instance.CurrentState != GameManager.GameState.Playing && hitButton.gameObject.activeSelf)
         {
             DisableHitButton();
+            DisableBackground();
         }
-        else if(GameManager.Instance.CurrentState == GameManager.GameState.Playing)
+        else if (GameManager.Instance.CurrentState == GameManager.GameState.Playing)
         {
             EnableHitButton();
+            EnableBackground();
         }
     }
-    
+
     private void EnableHitButton()
     {
         hitButton.gameObject.SetActive(true);
-    }    
+    }
 
     private void DisableHitButton()
     {
         hitButton.gameObject.SetActive(false);
+    }
+
+    private void EnableBackground()
+    {
+        background.gameObject.SetActive(true);
+    }
+
+    private void DisableBackground()
+    {
+        background.gameObject.SetActive(false);
     }
 }

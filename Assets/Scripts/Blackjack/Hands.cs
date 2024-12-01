@@ -26,7 +26,8 @@ namespace CardGame
         [SerializeField] private float selectionOffset = 0.5f;
 
         [Header("Audio")]
-        [SerializeField] private AudioClip cardSlide;
+        [SerializeField] private AudioClip cardSlide1;
+        [SerializeField] private AudioClip cardSlide2;
 
         // Public fields required by BlackjackController
         public List<Card> cards { get; private set; }
@@ -60,9 +61,6 @@ namespace CardGame
         private bool _isAnimating;
         private UIController _uiController;
         private Action _updateSelectedCardsHandler;
-
-        [SerializeField] private AudioClip cardSlide1;
-        [SerializeField] private AudioClip cardSlide2;
 
         #region Unity Lifecycle
         private void Start()
@@ -303,7 +301,6 @@ namespace CardGame
             if (isAnimating || GameManager.Instance.CurrentState != GameManager.GameState.Preparation)
                 return;
 
-            AudioManager.Instance.PlaySFX(cardSlide);
             if (_isAnimating) return;
 
             if (selectedCardIndex == index)
