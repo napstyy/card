@@ -36,15 +36,10 @@ public class UIController : MonoBehaviour
     {
         GameManager.Instance.OnGameStateChanged += GameStateChangedHandler;
         BlackjackController.Instance.OnRoundStateChanged += RoundStateChangedHandler;
-        player = GameManager.Instance.PlayerStats;
         optionsMenu = FindObjectOfType<OptionUIManager>();
-        player.OnChipsChanged += UpdateChipsText;
-        player.OnBetsChanged += UpdateBetsText;
         confirmButton.onClick.AddListener(() => GameManager.Instance.CompleteRound());
         startGameButton.onClick.AddListener(() => GameManager.Instance.SetGameState(GameManager.GameState.Betting));
         optionsButton.onClick.AddListener(() => optionsMenu.OpenOptions());
-        UpdateChipsText(player.ownedChips);
-        UpdateBetsText(player.totalBets);
     }
 
     private void RoundStateChangedHandler(BlackjackController.RoundState state)
@@ -91,12 +86,23 @@ public class UIController : MonoBehaviour
 
     void UpdateChipsText(int newValue)
     {
+        Debug.Log("Chips Changed");
         chipsText.SetText(newValue.ToString());
     }
 
     void UpdateBetsText(int newValue)
     {
+        Debug.Log("Bets Changed");
         betsText.SetText(newValue.ToString());
+    }
+
+    public void BindTextWithPlayer(PlayerStats playerStats)
+    {
+        player = playerStats;
+        player.OnChipsChanged += UpdateChipsText;
+        player.OnBetsChanged += UpdateBetsText;
+        UpdateChipsText(player.ownedChips);
+        UpdateBetsText(player.totalBets);
     }
 
     public void EnableDoubleDownButton()

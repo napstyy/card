@@ -63,7 +63,6 @@ namespace CardGame
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
-                InitializeGame();
             }
             else
             {
@@ -131,8 +130,6 @@ namespace CardGame
 
             // Connect game events
             OnGameStateChanged += HandleGameStateChange;
-            Progress.OnRoundChanged += HandleRoundChange;
-            Progress.OnSwapsChanged += HandleSwapsChange;
 
             LogDebug("Game components initialized successfully");
         }
@@ -190,6 +187,9 @@ namespace CardGame
             Progress = new GameProgress(maxRounds, targetMoney, swapsPerRound);
             IsGameActive = true;
             PlayerStats = new PlayerStats(startingChips);  // Changed from playerComponent.startingChips
+            FindAnyObjectByType<UIController>()?.BindTextWithPlayer(PlayerStats);
+            Progress.OnRoundChanged += HandleRoundChange;
+            Progress.OnSwapsChanged += HandleSwapsChange;
             // Remove Stats initialization from here as it's done in InitializeReferences
         }
 
