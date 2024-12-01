@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using CardGame;
 
 public class ItemUIManager : MonoBehaviour
 {
@@ -86,11 +87,11 @@ public class ItemUIManager : MonoBehaviour
     private void AddTooltip(GameObject buttonObj, ItemData itemData)
     {
         // Add tooltip component if you have one
-        var tooltip = buttonObj.AddComponent<TooltipComponent>(); // Replace with your tooltip component
-        if (tooltip != null)
-        {
-            tooltip.SetTooltipText($"{itemData.name}\n{itemData.description}");
-        }
+        // var tooltip = buttonObj.AddComponent<TooltipComponent>(); // Replace with your tooltip component
+        // if (tooltip != null)
+        // {
+        //     tooltip.SetTooltipText($"{itemData.name}\n{itemData.description}");
+        // }
     }
 
     private void SetupPreviewWindow()
@@ -132,7 +133,7 @@ public class ItemUIManager : MonoBehaviour
 
         if (type == ItemType.PeekNextCards)
         {
-            ShowCardPreview();
+            // ShowCardPreview();
         }
     }
 
@@ -141,19 +142,19 @@ public class ItemUIManager : MonoBehaviour
         UpdateButtonState(type);
     }
 
-    private void ShowCardPreview()
-    {
-        Card[] previewCards = BlackjackController.Instance.deck.PeekNextCards(2);
-        if (previewCards == null) return;
+    // private void ShowCardPreview()
+    // {
+    //     Card[] previewCards = BlackjackController.Instance.deck.PeekNextCards(2);
+    //     if (previewCards == null) return;
 
-        cardPreview1.sprite = CardSpriteReference.Instance.GetCardSprite(
-            previewCards[0].rank, previewCards[0].suit);
-        cardPreview2.sprite = CardSpriteReference.Instance.GetCardSprite(
-            previewCards[1].rank, previewCards[1].suit);
+    //     cardPreview1.sprite = CardSpriteReference.Instance.GetCardSprite(
+    //         previewCards[0].rank, previewCards[0].suit);
+    //     cardPreview2.sprite = CardSpriteReference.Instance.GetCardSprite(
+    //         previewCards[1].rank, previewCards[1].suit);
 
-        previewText.text = "Your next two cards will be:";
-        previewWindow.SetActive(true);
-    }
+    //     previewText.text = "Your next two cards will be:";
+    //     previewWindow.SetActive(true);
+    // }
 
     private void OnDestroy()
     {

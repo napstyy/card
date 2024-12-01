@@ -95,12 +95,12 @@ namespace CardGame
             }
 
             // Setup tooltip
-            TooltipTrigger tooltip = buttonObj.GetComponent<TooltipTrigger>();
-            if (tooltip != null)
-            {
-                tooltip.header = itemData.name;
-                tooltip.content = itemData.description;
-            }
+            // TooltipTrigger tooltip = buttonObj.GetComponent<TooltipTrigger>();
+            // if (tooltip != null)
+            // {
+            //     tooltip.header = itemData.name;
+            //     tooltip.content = itemData.description;
+            // }
 
             // Setup click handler
             button.onClick.AddListener(() => UseItem(itemData.type));

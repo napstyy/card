@@ -3594,7 +3594,15 @@ MonoBehaviour:
   betsButtons: {fileID: 1712454791}
   confirmBetsButton: {fileID: 1653727603}
   resetBetsButton: {fileID: 555812707}
+  resultBanner: {fileID: 762652443}
+  resultText: {fileID: 1757652924}
   shopWindow: {fileID: 885725809}
+  itemIcons:
+  - {fileID: 1489866835, guid: a63a3306c15207a49a464a2d22142520, type: 3}
+  - {fileID: -1465106533, guid: a63a3306c15207a49a464a2d22142520, type: 3}
+  - {fileID: 1423831758, guid: a63a3306c15207a49a464a2d22142520, type: 3}
+  itemButton: {fileID: 1545191037}
+  itemIcon: {fileID: 68640646}
   shopHeader: {fileID: 1437170039}
   normalHeader: {fileID: 1842264426}
   confirmButton: {fileID: 140361535}
@@ -3804,7 +3812,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &762652444
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4266,14 +4274,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   itemIcons:
-  - {fileID: -230809643, guid: a63a3306c15207a49a464a2d22142520, type: 3}
-  - {fileID: 775890078, guid: a63a3306c15207a49a464a2d22142520, type: 3}
-  - {fileID: 651586165, guid: a63a3306c15207a49a464a2d22142520, type: 3}
   - {fileID: 1489866835, guid: a63a3306c15207a49a464a2d22142520, type: 3}
   - {fileID: -1465106533, guid: a63a3306c15207a49a464a2d22142520, type: 3}
-  - {fileID: 30314364, guid: a63a3306c15207a49a464a2d22142520, type: 3}
   - {fileID: 1423831758, guid: a63a3306c15207a49a464a2d22142520, type: 3}
-  - {fileID: 391325552, guid: a63a3306c15207a49a464a2d22142520, type: 3}
   drawButton: {fileID: 247786828}
   leaveButton: {fileID: 234497652}
   itemDetailWindow: {fileID: 653373891}
@@ -4283,14 +4286,9 @@ MonoBehaviour:
   descriptionText: {fileID: 1016008830}
   confirmButton: {fileID: 752345069}
   itemDescriptions:
-  - A
-  - B
-  - C
-  - D
-  - E
-  - F
-  - G
-  - H
+  - All In and Win x10 bets
+  - Show Dealer Hands
+  - Return Bets if Burst
   rollingDuration: 2
   rollingSpeed: 0.05
   slowDownDuration: 1
@@ -6459,7 +6457,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Draw
+  m_text: <sprite name="chips"> 500
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 899ae239dcf5124468f2e7988a357bff, type: 2}
   m_sharedMaterial: {fileID: 270982175206645713, guid: 899ae239dcf5124468f2e7988a357bff, type: 2}

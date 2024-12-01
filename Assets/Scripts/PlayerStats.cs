@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CardGame
 {
@@ -91,14 +92,16 @@ namespace CardGame
             OnItemAdded?.Invoke(itemId);
         }
 
-        public bool UseItem(int itemId)
+        public bool UseItem()
         {
-            if (!HasItem(itemId)) return false;
-
-            _ownedItems.Remove(itemId);
+            if (_ownedItems.Count == 0) return false;
+            int itemId = FirstItemID();
+            _ownedItems.RemoveAt(0);
             OnItemRemoved?.Invoke(itemId);
             return true;
         }
         public bool CanAfford(int amount) => ownedChips >= amount;
+        public int FirstItemID() => _ownedItems.Count > 0?_ownedItems[0]:-1;
+        #endregion
     }
 }

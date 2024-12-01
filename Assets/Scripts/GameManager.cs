@@ -354,6 +354,7 @@ namespace CardGame
         private void EndGame(bool playerWon)
         {
             SetGameState(GameState.GameOver);
+            FindAnyObjectByType<UIController>().ShowResult(playerWon?"YOU WIN!!!!":"LOSE...");
             OnGameOver?.Invoke(playerWon);
         }
         #endregion

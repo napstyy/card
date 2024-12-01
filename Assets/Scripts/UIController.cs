@@ -23,9 +23,14 @@ public class UIController : MonoBehaviour
     [SerializeField] GameObject betsButtons;
     [SerializeField] Button confirmBetsButton;
     [SerializeField] Button resetBetsButton;
+    [SerializeField] GameObject resultBanner;
+    [SerializeField] TextMeshProUGUI resultText;
 
     [Header("Shop")]
     [SerializeField] GameObject shopWindow;
+    [SerializeField] Sprite[] itemIcons;
+    [SerializeField] Button itemButton;
+    [SerializeField] Image itemIcon;
 
     [Header("Others")]
     [SerializeField] GameObject shopHeader;
@@ -60,12 +65,22 @@ public class UIController : MonoBehaviour
         }
         confirmButton.onClick.AddListener(() => GameManager.Instance.CompleteRound());
         optionsButton.onClick.AddListener(() => optionsMenu.OpenOptions());
+        itemButton.onClick.AddListener(()=>UseItem());
+    }
+
+    private void UseItem()
+    {
+        GameManager.Instance.PlayerStats.UseItem();
     }
 
     private void Update() {
         remainingRoundsText.SetText($"{GameManager.Instance.CurrentRound}/{GameManager.Instance.MaxRounds}");
         burstLimitText.SetText(BlackjackController.Instance.RoundBurstLimit.ToString());
         replaceText.SetText(GameManager.Instance.Swaps.ToString());
+        if(GameManager.Instance.PlayerStats.FirstItemID() >= 0)
+        {
+            itemIcon.sprite = itemIcons[GameManager.Instance.PlayerStats.FirstItemID()];
+        }
     }
 
     private void RoundStateChangedHandler(BlackjackController.RoundState state)
@@ -100,6 +115,7 @@ public class UIController : MonoBehaviour
                 normalHeader.SetActive(true);
                 actionButtons.SetActive(false);
                 shopWindow.SetActive(false);
+                resultBanner.SetActive(false);
             break;
             case GameManager.GameState.Playing:
                 betsButtons.SetActive(false);
@@ -112,6 +128,7 @@ public class UIController : MonoBehaviour
                 actionButtons.SetActive(false);
                 confirmButton.gameObject.SetActive(false);
                 shopWindow.SetActive(true);
+                resultBanner.SetActive(false);
             break;
             case GameManager.GameState.RoundEnd:
 
@@ -182,5 +199,11 @@ public class UIController : MonoBehaviour
         betsButtons.SetActive(false);
         confirmBetsButton.gameObject.SetActive(false);
         resetBetsButton.gameObject.SetActive(false);
+    }
+
+    public void ShowResult(string text)
+    {
+        resultBanner.SetActive(true);
+        resultText.SetText(text);
     }
 }

@@ -110,7 +110,6 @@ namespace CardGame
         #endregion
 
         #region Private Variables
-        private Deck deck;
         private PlayerStats player;
         private int bustLimit = 21;
         private bool reducePointsByHalf;
@@ -537,7 +536,7 @@ namespace CardGame
                 : playerPoints > dealerPoints ? "Player Wins!"
                 : playerPoints < dealerPoints ? "Dealer Wins!"
                 : "Tie";
-
+            FindAnyObjectByType<UIController>().ShowResult(gameResult);
             Debug.Log($"{gameResult} Dealer: {dealerPoints} | Player: {playerPoints}");
         }
 

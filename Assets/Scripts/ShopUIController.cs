@@ -46,11 +46,12 @@ public class ShopUIController : MonoBehaviour
 
     void LuckyDraw()
     {
-        if (isRolling)
+        if (isRolling || GameManager.Instance.PlayerStats.ownedChips < 600)
         {
             // Prevent multiple rolls at the same time
             return;
         }
+        GameManager.Instance.PlayerStats.RemoveChips(500);
 
         isRolling = true;
         stopPressed = false; // Reset stopPressed when starting a new roll
@@ -124,6 +125,7 @@ public class ShopUIController : MonoBehaviour
         confirmButton.GetComponentInChildren<TextMeshProUGUI>().text = "Confirm"; // Set button to "Confirm"
         isRolling = false;
         drawButton.interactable = true; // Enable the draw button
+        GameManager.Instance?.PlayerStats.AddItem(finalIndex);
     }
 
     void CloseItemDetailWindow()

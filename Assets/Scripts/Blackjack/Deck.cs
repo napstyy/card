@@ -87,6 +87,10 @@ namespace CardGame
             }
 
             int randomIndex = UnityEngine.Random.Range(0, remainCards.Count);
+            if(removedCards.Count == 0)
+            {
+                Initialize();
+            }
             Card drawnCard = remainCards[randomIndex];
             remainCards.RemoveAt(randomIndex);
             removedCards.Add(drawnCard);
