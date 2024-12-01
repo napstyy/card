@@ -1,34 +1,18 @@
 using UnityEngine;
 using DG.Tweening;
-using System.Collections;
 
 namespace CardGame
 {
     public class CardAnimationSystem : MonoBehaviour
     {
-        [Header("Draw Animation Settings")]
+        [Header("Layout Settings")]
+        [SerializeField] private float cardSpacing = 1.2f;
+        [SerializeField] private Vector2 dealerHandPosition = new Vector2(0, 2f); // Center, top
+        [SerializeField] private Vector2 playerHandPosition = new Vector2(0, -2f); // Center, bottom
+
+        [Header("Animation Settings")]
         [SerializeField] private float drawDuration = 0.6f;
         [SerializeField] private float arcHeight = 1.5f;
-        [SerializeField]
-        private AnimationCurve drawCurve = new AnimationCurve(
-            new Keyframe(0, 0, 0, 1),    // Start: slow
-            new Keyframe(0.4f, 0.8f, 1, 1),  // Middle: fast
-            new Keyframe(1, 1, 0.5f, 0)  // End: ease out
-        );
-
-        [Header("Flip Animation")]
-        [SerializeField] private float flipDuration = 0.4f;
-        [SerializeField]
-        private AnimationCurve flipCurve = new AnimationCurve(
-            new Keyframe(0, 0, 0, 2),
-            new Keyframe(0.5f, 1, 2, 2),
-            new Keyframe(1, 0, 2, 0)
-        );
-
-        [Header("Scale Effects")]
-        [SerializeField] private float scaleUpAmount = 1.1f;
-        [SerializeField] private float scaleDuration = 0.2f;
-        [SerializeField] private Ease scaleEase = Ease.OutBack;
 
         public static CardAnimationSystem Instance { get; private set; }
 
@@ -45,163 +29,77 @@ namespace CardGame
             }
         }
 
-        private void OnDestroy()
+        public void AnimateCardDraw(GameObject cardObject, Transform handTransform, int cardIndex, int totalCards, bool isDealerHand, bool faceUp = true)
         {
-            if (Instance == this)
-            {
-                Instance = null;
-            }
-        }
+            if (cardObject == null || handTransform == null) return;
 
-        public void AnimateCardDraw(GameObject cardObject, Vector3 startPosition, Vector3 targetPosition, bool faceUp = true)
-        {
-            if (cardObject == null) return;
+            // Calculate center point for the hand
+            Vector2 handCenter = isDealerHand ? dealerHandPosition : playerHandPosition;
+            float totalWidth = (totalCards - 1) * cardSpacing;
+            float startX = -totalWidth / 2f;
 
-            DOTween.Kill(cardObject.transform);
+            // Calculate target position (centered)
+            Vector3 targetPosition = new Vector3(
+                startX + (cardIndex * cardSpacing),
+                handCenter.y,
+                0
+            );
 
-            // Initial setup
+            // Start position (off-screen right)
+            Vector3 startPosition = new Vector3(
+                targetPosition.x + 10f,
+                targetPosition.y,
+                0
+            );
+
+            // Setup initial card state
             cardObject.transform.position = startPosition;
             cardObject.transform.rotation = Quaternion.identity;
             cardObject.transform.localScale = Vector3.one;
 
+            // Create animation sequence
             Sequence drawSequence = DOTween.Sequence();
 
-            // Calculate better arc points for more natural movement
-            Vector3 midPoint = (startPosition + targetPosition) * 0.5f;
-            float horizontalDistance = Vector3.Distance(startPosition, targetPosition);
-            float dynamicArcHeight = Mathf.Min(arcHeight, horizontalDistance * 0.4f);
-
-            Vector3 controlPoint1 = Vector3.Lerp(startPosition, midPoint, 0.25f) + Vector3.up * (dynamicArcHeight * 0.75f);
-            Vector3 controlPoint2 = Vector3.Lerp(midPoint, targetPosition, 0.75f) + Vector3.up * (dynamicArcHeight * 0.25f);
-
-            Vector3[] pathPoints = new Vector3[] {
-                startPosition,
-                controlPoint1,
-                midPoint + Vector3.up * dynamicArcHeight,
-                controlPoint2,
-                targetPosition
-            };
-
-            // Smooth path movement
+            // Path movement with arc
+            Vector3[] pathPoints = CalculateArcPath(startPosition, targetPosition);
             drawSequence.Append(cardObject.transform
                 .DOPath(pathPoints, drawDuration, PathType.CatmullRom)
-                .SetEase(Ease.OutQuint));
+                .SetEase(Ease.OutQuad));
 
-            // Enhanced rotation with slight wobble
-            if (faceUp)
-            {
-                Sequence rotationSequence = DOTween.Sequence();
-
-                // Initial slight tilt
-                rotationSequence.Append(cardObject.transform
-                    .DORotate(new Vector3(0, 15, 0), drawDuration * 0.2f)
-                    .SetEase(Ease.OutQuad));
-
-                // Main rotation
-                rotationSequence.Append(cardObject.transform
-                    .DORotate(new Vector3(0, 180, 0), drawDuration * 0.6f)
-                    .SetEase(flipCurve));
-
-                // Final stabilization
-                rotationSequence.Append(cardObject.transform
-                    .DORotate(new Vector3(0, 180, 0), drawDuration * 0.2f)
-                    .SetEase(Ease.OutBack));
-
-                drawSequence.Join(rotationSequence);
-            }
-
-            // Dynamic scale effect
-            Sequence scaleSequence = DOTween.Sequence();
-
-            // Slight scale up during arc
-            scaleSequence.Append(cardObject.transform
-                .DOScale(Vector3.one * scaleUpAmount, drawDuration * 0.4f)
-                .SetEase(scaleEase));
-
-            // Return to normal with bounce
-            scaleSequence.Append(cardObject.transform
-                .DOScale(Vector3.one, drawDuration * 0.6f)
-                .SetEase(Ease.OutBack));
-
-            drawSequence.Join(scaleSequence);
-
-            // Optional: Add subtle rotation around Z axis for more natural feel
+            // Card flip animation
             if (faceUp)
             {
                 drawSequence.Join(cardObject.transform
-                    .DORotate(new Vector3(0, 180, Random.Range(-2f, 2f)), drawDuration)
+                    .DORotate(new Vector3(0, 180, 0), drawDuration)
                     .SetEase(Ease.OutQuad));
             }
 
             drawSequence.Play();
         }
 
-        public void AnimateCardFlip(GameObject cardObject, bool faceUp)
+        private Vector3[] CalculateArcPath(Vector3 start, Vector3 end)
         {
-            if (cardObject == null) return;
+            Vector3 midPoint = (start + end) * 0.5f;
+            float height = arcHeight;
 
-            DOTween.Kill(cardObject.transform);
-            Sequence flipSequence = DOTween.Sequence();
-
-            // Add slight upward movement during flip
-            flipSequence.Join(cardObject.transform
-                .DOLocalMoveY(cardObject.transform.localPosition.y + 0.1f, flipDuration * 0.5f)
-                .SetLoops(2, LoopType.Yoyo));
-
-            // Enhanced flip animation
-            flipSequence.Join(cardObject.transform
-                .DORotate(new Vector3(0, 90, 0), flipDuration * 0.5f)
-                .SetEase(flipCurve)
-                .OnComplete(() =>
-                {
-                    DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
-                    if (displayCard != null)
-                    {
-                        if (faceUp) displayCard.ShowCard();
-                        else displayCard.HideCard();
-                    }
-                }));
-
-            flipSequence.Append(cardObject.transform
-                .DORotate(new Vector3(0, faceUp ? 180 : 0, 0), flipDuration * 0.5f)
-                .SetEase(flipCurve));
-
-            // Add subtle scale effect during flip
-            flipSequence.Join(cardObject.transform
-                .DOScale(Vector3.one * 1.05f, flipDuration)
-                .SetEase(flipCurve)
-                .SetLoops(2, LoopType.Yoyo));
-
-            flipSequence.Play();
+            return new Vector3[]
+            {
+                start,
+                start + (Vector3.up * height * 0.5f),
+                midPoint + (Vector3.up * height),
+                end + (Vector3.up * height * 0.5f),
+                end
+            };
         }
 
-        public void AnimateCardMove(GameObject cardObject, Vector3 targetPosition, float duration = 0.3f)
+        public void AnimateCardSelect(Transform cardTransform, bool selected)
         {
-            if (cardObject == null) return;
+            if (cardTransform == null) return;
 
-            DOTween.Kill(cardObject.transform);
-
-            Sequence moveSequence = DOTween.Sequence();
-
-            // Slight arc movement
-            float distance = Vector3.Distance(cardObject.transform.position, targetPosition);
-            float arcHeight = distance * 0.1f;
-            Vector3 midPoint = Vector3.Lerp(cardObject.transform.position, targetPosition, 0.5f) + Vector3.up * arcHeight;
-
-            moveSequence.Append(cardObject.transform
-                .DOPath(new Vector3[] {
-                    cardObject.transform.position,
-                    midPoint,
-                    targetPosition
-                }, duration, PathType.CatmullRom)
-                .SetEase(Ease.OutQuint));
-
-            // Subtle rotation during movement
-            moveSequence.Join(cardObject.transform
-                .DORotate(new Vector3(0, cardObject.transform.rotation.eulerAngles.y, Random.Range(-1f, 1f)), duration)
-                .SetEase(Ease.OutQuad));
-
-            moveSequence.Play();
+            float targetY = selected ? 0.5f : 0f;
+            Vector3 currentPos = cardTransform.localPosition;
+            cardTransform.DOLocalMoveY(currentPos.y + targetY, 0.3f)
+                .SetEase(Ease.OutQuad);
         }
     }
 }
