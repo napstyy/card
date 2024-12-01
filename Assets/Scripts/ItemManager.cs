@@ -166,7 +166,7 @@ namespace CardGame
             bool success = ExecuteItemEffect(type);
             if (success)
             {
-                gameManager.PlayerStats.UseItem((int)type);
+                // gameManager.PlayerStats.UseItem((int)type);
                 OnItemUsed?.Invoke(type);
             }
             return success;

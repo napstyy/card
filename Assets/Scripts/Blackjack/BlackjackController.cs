@@ -194,13 +194,13 @@ namespace CardGame
             {
                 case 0:
                     if (
-                    gameManager.CurrentState != GameManager.GameState.Betting)
+                    gameManager.CurrentState != GameManager.GameState.Playing)
                     return;
 
-                playerHands[0].chips += player.ownedChips * 10;
-                player.RemoveChips(player.ownedChips);
-                gameManager.SetGameState(GameManager.GameState.Playing);
-                AudioManager.Instance?.PlaySFX(betChips);
+                    playerHands[0].chips += player.ownedChips * 10;
+                    player.RemoveChips(player.ownedChips);
+                    gameManager.SetGameState(GameManager.GameState.Playing);
+                    AudioManager.Instance?.PlaySFX(betChips);
                 break;
                 case 1:
                     dealerHands.ShowHands();

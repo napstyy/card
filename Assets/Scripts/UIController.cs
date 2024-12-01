@@ -33,6 +33,7 @@ public class UIController : MonoBehaviour
     [SerializeField] Image itemIcon;
 
     [Header("Others")]
+    [SerializeField] Sprite defaultImage;
     [SerializeField] GameObject shopHeader;
     [SerializeField] GameObject normalHeader;
     [SerializeField] Button confirmButton;
@@ -80,6 +81,10 @@ public class UIController : MonoBehaviour
         if(GameManager.Instance.PlayerStats.FirstItemID() >= 0)
         {
             itemIcon.sprite = itemIcons[GameManager.Instance.PlayerStats.FirstItemID()];
+        }
+        else
+        {
+            itemIcon.sprite = defaultImage;
         }
     }
 
