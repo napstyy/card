@@ -30,6 +30,8 @@ namespace CardGame
         private UIController _uiController;
         private Action _updateSelectedCardsHandler;
 
+        [SerializeField] private AudioClip cardSlide;
+
         private void Start()
         {
             _uiController = FindAnyObjectByType<UIController>();
@@ -107,6 +109,7 @@ namespace CardGame
         private void HandleCardClick(GameObject cardObject, int index)
         {
             if (_isAnimating) return;
+            AudioManager.Instance.PlaySFX(cardSlide);
 
             if (_selectedCardIndex == index)
             {

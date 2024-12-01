@@ -90,6 +90,7 @@ namespace CardGame
 
         [Header("Audio Clips")]
         public AudioClip cardDrop;
+        public AudioClip betChips;
         #endregion
 
         #region Private Variables
@@ -361,6 +362,8 @@ namespace CardGame
                 Debug.Log("Player Busted");
                 Stand();
             }
+
+            AudioManager.Instance.PlaySFX(cardDrop);
         }
 
         public void ConfirmBet()
@@ -371,6 +374,7 @@ namespace CardGame
 
             playerHands[0].chips += player.totalBets;
             player.PayBet();
+            AudioManager.Instance.PlaySFX(betChips);
             gameManager.SetGameState(GameManager.GameState.Playing);
         }
 
