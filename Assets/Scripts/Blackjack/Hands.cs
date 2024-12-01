@@ -115,6 +115,7 @@ namespace CardGame
 
         public void InitializeHands()
         {
+            if(cards == null) Initialize();
             foreach (DisplayCard displayCard in displayCards)
             {
                 if (displayCard != null && displayCard.gameObject != null)

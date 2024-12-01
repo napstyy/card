@@ -10,6 +10,8 @@ public class ShopUIController : MonoBehaviour
     [SerializeField] Button drawButton; // Button to trigger lucky draw
     [SerializeField] Button leaveButton; // Button to trigger lucky draw
     [SerializeField] GameObject itemDetailWindow; // To display item details after draw
+    [SerializeField] GameObject machine; // To display item details after draw
+    [SerializeField] GameObject descriptionWindow; // To display item details after draw
     [SerializeField] Image itemIcon; // Image showing the item drawn
     [SerializeField] TextMeshProUGUI descriptionText; // Text to show item description
     [SerializeField] Button confirmButton; // Button to stop rolling or close the detail window
@@ -56,7 +58,7 @@ public class ShopUIController : MonoBehaviour
         drawButton.gameObject.SetActive(false);
         leaveButton.gameObject.SetActive(false);
         itemDetailWindow.SetActive(true);
-        descriptionText.gameObject.SetActive(false); // Hide text during rolling
+        descriptionWindow.gameObject.SetActive(false); // Hide text during rolling
 
         confirmButton.gameObject.SetActive(true);
         confirmButton.GetComponentInChildren<TextMeshProUGUI>().text = "Stop"; // Set button to "Stop"
@@ -117,7 +119,7 @@ public class ShopUIController : MonoBehaviour
         descriptionText.text = itemDescriptions[finalIndex];
 
         // End of rolling: Show description and update UI
-        descriptionText.gameObject.SetActive(true);
+        descriptionWindow.gameObject.SetActive(true);
         confirmButton.interactable = true; // Allow button interaction again
         confirmButton.GetComponentInChildren<TextMeshProUGUI>().text = "Confirm"; // Set button to "Confirm"
         isRolling = false;
@@ -133,7 +135,10 @@ public class ShopUIController : MonoBehaviour
     void ResetUI()
     {
         // Hide detail window and show draw button
-        itemDetailWindow.SetActive(false);
+        itemDetailWindow.SetActive(true);
+        machine.SetActive(true);
+        descriptionWindow.SetActive(false);
+        confirmButton.gameObject.SetActive(false);
         drawButton.gameObject.SetActive(true);
         leaveButton.gameObject.SetActive(true);
 
