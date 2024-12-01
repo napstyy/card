@@ -34,6 +34,21 @@ namespace CardGame
         #region Singleton Implementation
         public static BlackjackController Instance { get; private set; }
 
+        // Add these fields to your existing BlackjackController class
+        private bool burstPreventionEnabled = false;
+        private int bonusMultiplier = 1;
+        public Deck deck { get; private set; }  // Make it accessible but protected  // Make deck accessible but protected
+
+        public void EnableBurstPrevention()
+        {
+            burstPreventionEnabled = true;
+        }
+
+        public void SetBonusMultiplier(int multiplier)
+        {
+            bonusMultiplier = Mathf.Max(1, multiplier);
+        }
+
         private void Awake()
         {
             if (Instance == null)
@@ -84,7 +99,7 @@ namespace CardGame
         public Hands selectedHands;
         public RoundState roundState { get; private set; }
         public bool AllowSplit { get { return playerHands[0].IsPair() && !isSplit && !isDoubleDown; } }
-        public int RoundBurstLimit {get {return bustLimit;}}
+        public int RoundBurstLimit { get { return bustLimit; } }
 
         [Header("Secret Rules")]
         public SecretRule[] rules;
@@ -237,7 +252,7 @@ namespace CardGame
 
         private void AddRightSideCardPoints(Hands hands, Card card)
         {
-            if(hands.playerRole != Hands.Role.Player)return;
+            if (hands.playerRole != Hands.Role.Player) return;
             int index = hands.cards.IndexOf(card);
             if (index + 1 < hands.cards.Count)
             {
@@ -248,7 +263,7 @@ namespace CardGame
 
         private void AdjustPointsBySuit(Hands hands, Card card, bool add)
         {
-            if(hands.playerRole != Hands.Role.Player)return;
+            if (hands.playerRole != Hands.Role.Player) return;
             int count = hands.cards.Count(c => c.suit == card.suit);
             if (add)
                 hands.AddExtraPoints(count);
@@ -359,12 +374,22 @@ namespace CardGame
             if (CountPoints(hands) > 21 || roundState == RoundState.End) return;
 
             Card newCard = deck.DrawCard();
+
+            // Check if this hit would cause a burst and burst prevention is active
+            int potentialPoints = CountPoints(hands) + GetCardPoint(newCard);
+            if (potentialPoints > 21 && burstPreventionEnabled)
+            {
+                burstPreventionEnabled = false;
+                player.AddChips(hands.chips); // Return bet
+                Stand(); // End the round
+                return;
+            }
+
             TriggerDrawEffect(newCard, hands);
             hands.AddCardToHands(newCard);
 
             if (playerHands.All(h => CountPoints(h) > 21))
             {
-                Debug.Log("Player Busted");
                 Stand();
             }
 
@@ -388,7 +413,7 @@ namespace CardGame
             if (bets + player.totalBets > player.ownedChips ||
                 gameManager.CurrentState != GameManager.GameState.Betting)
                 return;
-             player.AddBet(bets);
+            player.AddBet(bets);
         }
 
         public void ResetBets()
@@ -486,7 +511,10 @@ namespace CardGame
                 int winAmount;
                 if (dealerPoints > bustLimit || playerPoints > dealerPoints)
                 {
+                    // Calculate win multiplier considering blackjack and bonus
                     int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
+                    multiplier *= bonusMultiplier;
+
                     winAmount = hands.chips * multiplier * (int)bonus;
                     player.AddChips(winAmount);
                 }
@@ -498,6 +526,7 @@ namespace CardGame
             }
 
             hands.chips = 0;
+            bonusMultiplier = 1; // Reset bonus multiplier after resolving
             DisplayGameResult(playerPoints, dealerPoints);
         }
 

@@ -5,10 +5,11 @@ using System.Linq;
 namespace CardGame
 {
     [Serializable]
-    public class Deck {
+    public class Deck
+    {
         private List<Card> remainCards;
         private List<Card> removedCards;
-        
+
         public Deck(int numOfDecks)
         {
             remainCards = new List<Card>();
@@ -23,6 +24,40 @@ namespace CardGame
                     }
                 }
             }
+        }
+
+        private Queue<Card> previewedCards = new Queue<Card>();
+
+        // Add these methods to your Deck class
+        public Card[] PeekNextCards(int count)
+        {
+            if (count <= 0 || count > remainCards.Count)
+                return null;
+
+            // Clear any previously peeked cards
+            previewedCards.Clear();
+
+            Card[] peekedCards = new Card[count];
+            List<Card> tempCards = new List<Card>(remainCards);
+
+            for (int i = 0; i < count; i++)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, tempCards.Count);
+                peekedCards[i] = tempCards[randomIndex];
+                previewedCards.Enqueue(tempCards[randomIndex]); // Store for later drawing
+                tempCards.RemoveAt(randomIndex);
+            }
+
+            return peekedCards;
+        }
+
+        // Optional: Add a method to peek at a specific position
+        public Card PeekCard(int position)
+        {
+            if (position < 0 || position >= remainCards.Count)
+                return null;
+
+            return remainCards[position];
         }
 
         private int GetCardPoint(Card card)
@@ -43,6 +78,14 @@ namespace CardGame
 
         public Card DrawCard()
         {
+            if (previewedCards.Count > 0)
+            {
+                Card previewedCard = previewedCards.Dequeue();
+                remainCards.Remove(previewedCard);
+                removedCards.Add(previewedCard);
+                return previewedCard;
+            }
+
             int randomIndex = UnityEngine.Random.Range(0, remainCards.Count);
             Card drawnCard = remainCards[randomIndex];
             remainCards.RemoveAt(randomIndex);
@@ -83,6 +126,6 @@ namespace CardGame
             removedCards.Clear();
         }
 
-        public int Count{ get{ return remainCards.Count;}}
+        public int Count { get { return remainCards.Count; } }
     }
 }
