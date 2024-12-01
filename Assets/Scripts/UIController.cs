@@ -48,7 +48,6 @@ public class UIController : MonoBehaviour
         if (canvasComponent != null && canvasComponent.renderMode == RenderMode.ScreenSpaceCamera)
         {
             canvasComponent.worldCamera = Camera.main;
-            Debug.Log("Canvas set to world camera");
         }
         else
         {

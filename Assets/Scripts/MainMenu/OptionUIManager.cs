@@ -6,9 +6,13 @@ using TMPro;
 
 public class OptionUIManager : MonoBehaviour
 {
+    [Header("UI Elements")]
+    private Canvas canvas;
     [SerializeField] private GameObject optionsMenu;
     [SerializeField] private GameObject background;
+    public GameObject mainMenuButton;
     public GameObject backButton;
+    public GameObject quitButton;
     [SerializeField] private Slider masterSlider;
     [SerializeField] private Slider musicSlider;
     [SerializeField] private Slider sfxSlider;
@@ -23,6 +27,8 @@ public class OptionUIManager : MonoBehaviour
     void Start()
     {
         backButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(Back);
+        mainMenuButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(BackToMainMenu);
+        quitButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(QuitGame);
         masterSlider.GetComponent<UnityEngine.UI.Slider>().onValueChanged.AddListener(SetMasterVolume);
         musicSlider.GetComponent<UnityEngine.UI.Slider>().onValueChanged.AddListener(SetMusicVolume);
         sfxSlider.GetComponent<UnityEngine.UI.Slider>().onValueChanged.AddListener(SetSFXVolume);
@@ -52,6 +58,18 @@ public class OptionUIManager : MonoBehaviour
     {
         optionsMenu.SetActive(true);
         background.SetActive(true);
+
+        // if current scene is not the main menu, hide the main menu button and quit button
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "MainMenu")
+        {
+            mainMenuButton.SetActive(false);
+            quitButton.SetActive(false);
+        }
+        else
+        {
+            mainMenuButton.SetActive(true);
+            quitButton.SetActive(true);
+        }
     }
 
     void Back()
@@ -59,6 +77,23 @@ public class OptionUIManager : MonoBehaviour
         AudioManager.Instance.PlayButtonClick();
         optionsMenu.SetActive(false);
         background.SetActive(false);
+    }
+
+    void BackToMainMenu()
+    {
+        AudioManager.Instance.PlayButtonClick();
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        Back();
+    }
+
+    void QuitGame()
+    {
+        AudioManager.Instance.PlayButtonClick();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif  
     }
 
     void SetMasterVolume(float volume)

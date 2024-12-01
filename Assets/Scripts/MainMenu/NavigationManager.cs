@@ -8,13 +8,15 @@ public class NavigationManager : MonoBehaviour
     public GameObject optionsButton;
     public GameObject exitButton;
 
-    [SerializeField] private GameObject optionsMenu;
+    [SerializeField] private OptionUIManager optionsMenu;
     [SerializeField] private GameObject background;
 
     private const string gameScene = "GameScene";
 
     void Start()
     {
+        optionsMenu = FindObjectOfType<OptionUIManager>();
+
         startButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(StartGame);
         optionsButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(OpenOptions);
         exitButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(ExitGame);
@@ -31,8 +33,7 @@ public class NavigationManager : MonoBehaviour
     {
         AudioManager.Instance.PlayButtonClick();
         // Open the options menu
-        optionsMenu.SetActive(true);
-        background.SetActive(true);
+        optionsMenu.OpenOptions();
     }
 
     void ExitGame()
