@@ -301,6 +301,8 @@ MonoBehaviour:
   spacing: 0.5
   chips: 0
   hideCards: 0
+  cardSlide1: {fileID: 8300000, guid: aa9cb8da27cad8049a3a98eedd83594a, type: 3}
+  cardSlide2: {fileID: 8300000, guid: c99723ce4809e2142b8558a569e8c764, type: 3}
 --- !u!1 &7034622559702622761
 GameObject:
   m_ObjectHideFlags: 0

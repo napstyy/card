@@ -958,7 +958,8 @@ MonoBehaviour:
   spacing: 1
   chips: 0
   hideCards: 0
-  cardSlide: {fileID: 0}
+  cardSlide1: {fileID: 0}
+  cardSlide2: {fileID: 0}
 --- !u!1 &361235482
 GameObject:
   m_ObjectHideFlags: 0
@@ -5515,7 +5516,7 @@ MonoBehaviour:
   dealerHands: {fileID: 298028781}
   selectedHands: {fileID: 0}
   rules: []
-  cardDrop: {fileID: 8300000, guid: 08869bb997c2fb841a39a6159fa77024, type: 3}
+  cardDrop: {fileID: 8300000, guid: 15fe39de01f414244ba4bb92e9a9801b, type: 3}
   betChips: {fileID: 8300000, guid: a8202430d7c5a564ebc97e066dc9d290, type: 3}
 --- !u!4 &1789771424
 Transform:
