@@ -34,7 +34,7 @@ public class ShopUIController : MonoBehaviour
 
     private void EndShopState()
     {
-        GameManager.Instance.SetGameState(GameManager.GameState.Betting);
+        GameManager.Instance.CompleteShoppingPhase();
     }
 
     private void OnDisable()

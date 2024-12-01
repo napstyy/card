@@ -190,6 +190,7 @@ namespace CardGame
             FindAnyObjectByType<UIController>()?.BindTextWithPlayer(PlayerStats);
             Progress.OnRoundChanged += HandleRoundChange;
             Progress.OnSwapsChanged += HandleSwapsChange;
+            blackjackController.GetRandomRules();
             // Remove Stats initialization from here as it's done in InitializeReferences
         }
 
@@ -210,8 +211,7 @@ namespace CardGame
             }
 
             Progress.ResetSwaps();
-            SetGameState(GameState.Preparation);
-            blackjackController.GetRandomRules();
+            SetGameState(GameState.Betting);
 
             LogDebug($"Starting Round {Progress.CurrentRound}");
         }
@@ -337,7 +337,7 @@ namespace CardGame
             }
             else
             {
-                SetGameState(GameState.Shopping);
+                SetGameState(GameState.RoundEnd);
             }
         }
 
