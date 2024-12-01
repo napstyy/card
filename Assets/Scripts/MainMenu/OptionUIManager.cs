@@ -12,10 +12,13 @@ public class OptionUIManager : MonoBehaviour
     [SerializeField] private Slider masterSlider;
     [SerializeField] private Slider musicSlider;
     [SerializeField] private Slider sfxSlider;
-    [SerializeField] private TMP_Dropdown displayModeDropdown; // Change this line
-    [SerializeField] private TMP_Dropdown resolutionDropdown; // Change this line
+    [SerializeField] private TMP_Dropdown displayModeDropdown;
+    [SerializeField] private TMP_Dropdown resolutionDropdown;
+    [SerializeField] private TMP_Dropdown refreshRateDropdown;
 
     private Resolution[] resolutions;
+    private int currentRefreshRateIndex;
+    private int totalNumberOfRefreshRates;
 
     void Start()
     {
@@ -25,8 +28,15 @@ public class OptionUIManager : MonoBehaviour
         sfxSlider.GetComponent<UnityEngine.UI.Slider>().onValueChanged.AddListener(SetSFXVolume);
         displayModeDropdown.onValueChanged.AddListener(SetDisplayMode);
         resolutionDropdown.onValueChanged.AddListener(SetResolution);
+        refreshRateDropdown.onValueChanged.AddListener(SetRefreshRate); // Add this line
+        resolutions = Screen.resolutions;
 
-        // Ensure these methods are only called once
+        if (refreshRateDropdown.options.Count == 0) 
+        {
+            PopulateRefreshRateDropdown();
+            totalNumberOfRefreshRates = refreshRateDropdown.options.Count;
+        }
+
         if (resolutionDropdown.options.Count == 0)
         {
             PopulateResolutionDropdown();
@@ -40,39 +50,33 @@ public class OptionUIManager : MonoBehaviour
 
     public void OpenOptions()
     {
-        // Open the options menu
         optionsMenu.SetActive(true);
         background.SetActive(true);
     }
 
     void Back()
     {
-        // Close the options menu
         optionsMenu.SetActive(false);
         background.SetActive(false);
     }
 
     void SetMasterVolume(float volume)
     {
-        // Set the master volume
         AudioManager.Instance.SetMasterVolume(volume);
     }
 
     void SetMusicVolume(float volume)
     {
-        // Set the music volume
         AudioManager.Instance.SetMusicVolume(volume);
     }
 
     void SetSFXVolume(float volume)
     {
-        // Set the SFX volume
         AudioManager.Instance.SetSFXVolume(volume);
     }
 
     void SetDisplayMode(int displayMode)
     {
-        // Set the display mode
         switch (displayMode)
         {
             case 0:
@@ -89,72 +93,79 @@ public class OptionUIManager : MonoBehaviour
 
     void SetResolution(int resolutionIndex)
     {
-        // Set the resolution
-        Resolution resolution = resolutions[resolutionIndex];
+        Resolution resolution = resolutions[resolutionIndex * totalNumberOfRefreshRates + currentRefreshRateIndex];
         Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreenMode);
+        PopulateRefreshRateDropdown(); // Refresh the refresh rate dropdown
     }
 
-    // void PopulateResolutionDropdown()
-    // {
-    //     // Populate the resolution dropdown
-    //     resolutions = Screen.resolutions;
-    //     resolutionDropdown.ClearOptions();
-
-    //     List<string> options = new List<string>();
-    //     int currentResolutionIndex = 0;
-
-    //     for (int i = 0; i < resolutions.Length; i++)
-    //     {
-    //         string option = resolutions[i].width + " x " + resolutions[i].height + " @" + resolutions[i].refreshRate.ToString() + " Hz";
-    //         options.Add(option);
-
-    //         if (resolutions[i].width == Screen.currentResolution.width &&
-    //             resolutions[i].height == Screen.currentResolution.height)
-    //         {
-    //             currentResolutionIndex = i;
-    //         }
-    //     }
-
-    //     resolutionDropdown.AddOptions(options);
-    //     resolutionDropdown.value = currentResolutionIndex;
-    //     resolutionDropdown.RefreshShownValue();
-    // }
+    void SetRefreshRate(int refreshRateIndex)
+    {
+        int refreshRate = resolutions[currentRefreshRateIndex].refreshRate;
+        Resolution currentResolution = Screen.currentResolution;
+        Screen.SetResolution(currentResolution.width, currentResolution.height, Screen.fullScreenMode, refreshRate);
+    }
 
     void PopulateResolutionDropdown()
-{
-    // Populate the resolution dropdown
-    resolutions = Screen.resolutions;
-    resolutionDropdown.ClearOptions();
-
-    List<string> options = new List<string>();
-    HashSet<string> addedResolutions = new HashSet<string>();
-    int currentResolutionIndex = 0;
-
-    for (int i = 0; i < resolutions.Length; i++)
     {
-        string resolutionString = resolutions[i].width + " x " + resolutions[i].height;
-        if (!addedResolutions.Contains(resolutionString))
-        {
-            addedResolutions.Add(resolutionString);
-            string option = resolutionString;
-            options.Add(option);
+        resolutionDropdown.ClearOptions();
 
-            if (resolutions[i].width == Screen.currentResolution.width &&
-                resolutions[i].height == Screen.currentResolution.height)
+        List<string> options = new List<string>();
+        HashSet<string> addedResolutions = new HashSet<string>();
+        int currentResolutionIndex = 0;
+
+        for (int i = 0; i < resolutions.Length; i++)
+        {
+            string resolutionString = resolutions[i].width + " x " + resolutions[i].height;
+            if (!addedResolutions.Contains(resolutionString))
             {
-                currentResolutionIndex = i;
+                addedResolutions.Add(resolutionString);
+                string option = resolutionString;
+                options.Add(option);
+
+                if (resolutions[i].width == Screen.currentResolution.width &&
+                    resolutions[i].height == Screen.currentResolution.height)
+                {
+                    currentResolutionIndex = i * totalNumberOfRefreshRates;
+                }
             }
         }
+
+        resolutionDropdown.AddOptions(options);
+        resolutionDropdown.value = currentResolutionIndex / totalNumberOfRefreshRates;
+        resolutionDropdown.RefreshShownValue();
     }
 
-    resolutionDropdown.AddOptions(options);
-    resolutionDropdown.value = currentResolutionIndex;
-    resolutionDropdown.RefreshShownValue();
-}
+    void PopulateRefreshRateDropdown()
+    {
+        refreshRateDropdown.ClearOptions();
+
+        List<string> options = new List<string>();
+        currentRefreshRateIndex = 0;
+        Resolution currentResolution = Screen.currentResolution;
+
+        for (int i = 0; i < resolutions.Length; i++)
+        {
+            if (resolutions[i].width == currentResolution.width && resolutions[i].height == currentResolution.height)
+            {
+                string option = resolutions[i].refreshRate + " Hz";
+                if (!options.Contains(option))
+                {
+                    options.Add(option);
+                    if (resolutions[i].refreshRate == currentResolution.refreshRate)
+                    {
+                        currentRefreshRateIndex = options.Count - 1;
+                    }
+                }
+            }
+        }
+
+        refreshRateDropdown.AddOptions(options);
+        refreshRateDropdown.value = currentRefreshRateIndex;
+        refreshRateDropdown.RefreshShownValue();
+    }
 
     void PopulateDisplayModeDropdown()
     {
-        // Populate the display mode dropdown
         displayModeDropdown.ClearOptions();
 
         List<string> options = new List<string>
