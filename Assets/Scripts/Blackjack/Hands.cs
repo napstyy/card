@@ -1,20 +1,60 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using DG.Tweening;
 
 namespace CardGame
 {
+    /// <summary>
+    /// Manages a hand of cards in the game, handling layout, animations, and interactions.
+    /// Can represent either a player's or dealer's hand.
+    /// </summary>
     public class Hands : MonoBehaviour
     {
+        #region Events and Delegates
         protected static event Action UpdateSelectedCards;
-        public event Action<int> OnHandsUpdate;
+        public event Action<int> OnHandsUpdate;  // Required by HandsUIController
+        #endregion
 
+        #region Public Fields and Properties
+        [Header("Position Settings")]
+        [SerializeField] private float cardSpacing = 1.2f;
+        [SerializeField] private float dealerYPosition = 0.8f;
+        [SerializeField] private float playerYPosition = -0.3f;
+        [SerializeField] private float animationDuration = 0.3f;
+        [SerializeField] private float selectionOffset = 0.5f;
+
+        [Header("Audio")]
+        [SerializeField] private AudioClip cardSlide;
+
+        // Public fields required by BlackjackController
+        public List<Card> cards { get; private set; }
+        public Role playerRole = Role.Player;
+        public int chips;
+        public int extraPoints;
+        public bool hideCards;
+        #endregion
+
+        #region Private Fields
+        private List<DisplayCard> displayCards;
+        private int selectedCardIndex = -1;
+        private bool isAnimating;
+        private UIController uiController;
+        private bool hideFirstCard;
+        private Vector3 basePosition;
+        private Sequence currentAnimation;
+        #endregion
+
+        #region Enums
         public enum Role
         {
             Dealer,
             Player
         }
+        #endregion
+
+        #region Unity Lifecycle
 
         public List<Card> cards { get; private set; }
         public Role playerRole = Role.Player;
@@ -35,83 +75,246 @@ namespace CardGame
 
         private void Start()
         {
-            _uiController = FindAnyObjectByType<UIController>();
-            _updateSelectedCardsHandler = () =>
-            {
-                if (BlackjackController.Instance.selectedHands != this && _selectedCardIndex >= 0)
-                {
-                    Transform previousCard = _cardObjectsList[_selectedCardIndex].transform;
-                    _isAnimating = true;
-                    previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
-                    {
-                        _isAnimating = false;
-                        _selectedCardIndex = -1;
-                    });
-                }
-            };
-
-            UpdateSelectedCards += _updateSelectedCardsHandler;
+            Initialize();
+            SetupEventHandlers();
+            basePosition = transform.position;
         }
 
         private void OnDestroy()
         {
-            UpdateSelectedCards -= _updateSelectedCardsHandler;
+            CleanupEventHandlers();
+            currentAnimation?.Kill();
+        }
+        #endregion
+
+        #region Initialization
+        private void Initialize()
+        {
+            cards = new List<Card>();
+            displayCards = new List<DisplayCard>();
+            uiController = FindAnyObjectByType<UIController>();
+        }
+
+        private void SetupEventHandlers()
+        {
+            UpdateSelectedCards += () =>
+            {
+                if (BlackjackController.Instance.selectedHands != this && selectedCardIndex >= 0)
+                {
+                    DeselectCard(displayCards[selectedCardIndex].gameObject);
+                }
+            };
+        }
+
+        private void CleanupEventHandlers()
+        {
+            UpdateSelectedCards = null;
+            foreach (var displayCard in displayCards)
+            {
+                if (displayCard != null)
+                {
+                    displayCard.RemoveEvent();
+                }
+            }
         }
 
         public void InitializeHands()
         {
-            if (_cardObjectsList == null) _cardObjectsList = new List<DisplayCard>();
-            if (cards == null) cards = new List<Card>();
-
-            foreach (DisplayCard displayCard in _cardObjectsList)
+            foreach (DisplayCard displayCard in displayCards)
             {
-                ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, displayCard.gameObject);
+                if (displayCard != null && displayCard.gameObject != null)
+                {
+                    ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, displayCard.gameObject);
+                }
             }
 
             extraPoints = 0;
-            _hideFirstCard = playerRole == Role.Dealer;
-            _selectedCardIndex = -1;
+            hideFirstCard = playerRole == Role.Dealer;
+            selectedCardIndex = -1;
             cards.Clear();
-            _cardObjectsList.Clear();
+            displayCards.Clear();
             OnHandsUpdate?.Invoke(-1);
         }
+        #endregion
 
+        #region Card Management
+        public void ResetExtraPoints()
+        {
+            extraPoints = 0;
+            UpdateHandsLayout(true);
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+        }
+
+        public void AddExtraPoints(int value)
+        {
+            extraPoints += value;
+            UpdateHandsLayout(true);
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+        }
+
+        public void ReduceExtraPoints(int value)
+        {
+            extraPoints -= value;
+            UpdateHandsLayout(true);
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+        }
         public void AddCardToHands(Card card)
         {
+            if (card == null) return;
+
             GameObject cardObject = ObjectPool.Instance.GetObject(CardSpriteReference.Instance.cardPrefab, transform);
             DisplayCard displayCard = cardObject.GetComponent<DisplayCard>();
-            int index = cards.Count;
 
-            // Calculate start and end positions
-            Vector3 startPos = transform.position + Vector3.right * 10f; // Starting position off-screen
-            Vector3 targetPos = transform.position + new Vector3((index - cards.Count / 2f) * spacing, 0f, 0f);
-
-            // Start the draw animation
-            if (CardAnimationSystem.Instance != null)
-            {
-                CardAnimationSystem.Instance.AnimateCardDraw(
-                    cardObject,
-                    startPos,
-                    targetPos,
-                    playerRole != Role.Dealer || index != 0
-                );
-            }
-
+            // Setup card
+            displayCard.Instantiate(card);
             if (playerRole == Role.Player)
             {
-                displayCard.OnCardClicked += () => HandleCardClick(cardObject, index);
+                int newCardIndex = cards.Count;
+                displayCard.OnCardClicked += () => HandleCardClick(cardObject, newCardIndex);
             }
 
-            displayCard.Instantiate(card);
+            // Set initial sorting order
+            SpriteRenderer spriteRenderer = cardObject.GetComponent<SpriteRenderer>();
+            spriteRenderer.sortingOrder = (playerRole == Role.Dealer ? 100 : 200) + (cards.Count * 2);
+
+            // Add to collections
             cards.Add(card);
-            _cardObjectsList.Add(displayCard);
-            UpdateHands();
+            displayCards.Add(displayCard);
+
+            // Animate card entry
+            AnimateCardEntry(cardObject, displayCard);
         }
+
+        private void AnimateCardEntry(GameObject cardObject, DisplayCard displayCard)
+        {
+            float yPosition = playerRole == Role.Dealer ? dealerYPosition : playerYPosition;
+            float totalWidth = (cards.Count - 1) * cardSpacing;
+
+            // Starting position (off-screen right)
+            Vector3 startPosition = basePosition + new Vector3(10f, yPosition, 0);
+            cardObject.transform.position = startPosition;
+
+            // Target position
+            Vector3 targetPosition = basePosition + new Vector3(
+                -totalWidth / 2f + ((cards.Count - 1) * cardSpacing),
+                yPosition,
+                0
+            );
+
+            // Create and store animation sequence
+            currentAnimation?.Kill();
+            currentAnimation = DOTween.Sequence()
+                .Append(cardObject.transform.DOMove(targetPosition, animationDuration).SetEase(Ease.OutQuad))
+                .OnComplete(() =>
+                {
+                    UpdateHandsLayout(false);
+                    if (hideFirstCard && cards.Count == 1 || hideCards)
+                    {
+                        displayCard.HideCard();
+                    }
+                    else
+                    {
+                        displayCard.ShowCard();
+                    }
+                    OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+                });
+        }
+
+        public bool ReplaceCard(Card newCard, out Card replacedCard)
+        {
+            replacedCard = null;
+            if (selectedCardIndex < 0 || selectedCardIndex >= cards.Count || newCard == null)
+                return false;
+
+            replacedCard = cards[selectedCardIndex];
+            cards[selectedCardIndex] = newCard;
+            displayCards[selectedCardIndex].Instantiate(newCard);
+
+            UpdateHandsLayout(true);
+            ResetSelectedCard();
+            return true;
+        }
+
+        public void ShowHands()
+        {
+            hideFirstCard = false;
+            foreach (var card in displayCards)
+            {
+                if (card != null)
+                {
+                    card.ShowCard();
+                }
+            }
+            UpdateHandsLayout(false);
+        }
+
+        public bool IsPair()
+        {
+            return cards.Count == 2 && cards[0].rank == cards[1].rank;
+        }
+        #endregion
+
+        #region Card Layout and Animation
+        private void UpdateHandsLayout(bool animate = true)
+        {
+            if (displayCards == null || displayCards.Count == 0) return;
+
+            currentAnimation?.Kill();
+            float totalWidth = (displayCards.Count - 1) * cardSpacing;
+            float yPosition = playerRole == Role.Dealer ? dealerYPosition : playerYPosition;
+
+            currentAnimation = DOTween.Sequence();
+
+            for (int i = 0; i < displayCards.Count; i++)
+            {
+                DisplayCard card = displayCards[i];
+                if (card == null) continue;
+
+                Vector3 targetPosition = new Vector3(
+                    -totalWidth / 2f + (i * cardSpacing),
+                    yPosition + (i == selectedCardIndex ? selectionOffset : 0),
+                    0
+                );
+
+                if (animate)
+                {
+                    currentAnimation.Join(card.transform.DOLocalMove(targetPosition, animationDuration)
+                        .SetEase(Ease.OutQuad));
+                }
+                else
+                {
+                    card.transform.localPosition = targetPosition;
+                }
+
+                // Update sorting order
+                SpriteRenderer spriteRenderer = card.GetComponent<SpriteRenderer>();
+                spriteRenderer.sortingOrder = (playerRole == Role.Dealer ? 100 : 200) + (i * 2);
+
+                // Update visibility
+                if (hideFirstCard && i == 0 || hideCards)
+                {
+                    card.HideCard();
+                }
+                else
+                {
+                    card.ShowCard();
+                }
+            }
+
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+        }
+        #endregion
+
+        #region Card Interaction
         private void HandleCardClick(GameObject cardObject, int index)
         {
+            if (isAnimating || GameManager.Instance.CurrentState != GameManager.GameState.Preparation)
+                return;
+
+            AudioManager.Instance.PlaySFX(cardSlide);
             if (_isAnimating) return;
 
-            if (_selectedCardIndex == index)
+            if (selectedCardIndex == index)
             {
                 AudioManager.Instance.PlaySFX(cardSlide2);
                 DeselectCard(cardObject);
@@ -125,81 +328,53 @@ namespace CardGame
             UpdateSelectedCards?.Invoke();
         }
 
-        private void DeselectCard(GameObject cardObject)
-        {
-            _selectedCardIndex = -1;
-            _isAnimating = true;
-            cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
-            {
-                _isAnimating = false;
-                _uiController.DisableReplaceButton();
-            });
-        }
-
         private void SelectCard(GameObject cardObject, int index)
         {
-            if (_selectedCardIndex >= 0 && BlackjackController.Instance.selectedHands == this)
+            if (selectedCardIndex >= 0 && BlackjackController.Instance.selectedHands == this)
             {
-                Transform previousCard = _cardObjectsList[_selectedCardIndex].transform;
-                _isAnimating = true;
-                previousCard.DOLocalMoveY(previousCard.localPosition.y - 0.5f, 0.5f).OnComplete(() => _isAnimating = false);
+                DeselectCard(displayCards[selectedCardIndex].gameObject);
             }
 
             BlackjackController.Instance.selectedHands = this;
-            _selectedCardIndex = index;
-            _isAnimating = true;
-            cardObject.transform.DOLocalMoveY(cardObject.transform.localPosition.y + 0.5f, 0.5f).OnComplete(() =>
-            {
-                _isAnimating = false;
-                _uiController.EnableReplaceButton();
-            });
+            selectedCardIndex = index;
+
+            // Animate card selection
+            currentAnimation?.Kill();
+            currentAnimation = DOTween.Sequence()
+                .Append(cardObject.transform.DOMove(
+                    cardObject.transform.position + Vector3.up * selectionOffset,
+                    animationDuration
+                ).SetEase(Ease.OutQuad));
+
+            uiController.EnableReplaceButton();
         }
 
-        public void ShowHands()
+        private void DeselectCard(GameObject cardObject)
         {
-            _hideFirstCard = false;
-            UpdateHands();
+            selectedCardIndex = -1;
+            UpdateHandsLayout(true);
+            uiController.DisableReplaceButton();
         }
 
-        public bool ReplaceCard(Card card, out Card replacedCard)
+        public void ResetSelectedCard(bool moveBack = true)
         {
-            replacedCard = null;
-            if (_selectedCardIndex >= 0 && _selectedCardIndex < cards.Count)
+            if (selectedCardIndex < 0 || selectedCardIndex >= displayCards.Count)
+                return;
+
+            if (moveBack)
             {
-                replacedCard = cards[_selectedCardIndex];
-                cards[_selectedCardIndex] = card;
-                _cardObjectsList[_selectedCardIndex].Instantiate(card);
-                UpdateHands();
-                _selectedCardIndex = -1;
-                _uiController.DisableReplaceButton();
-                return true;
+                DeselectCard(displayCards[selectedCardIndex].gameObject);
             }
-            return false;
+
+            selectedCardIndex = -1;
         }
+        #endregion
 
-        public void DropCard(int index)
-        {
-            if (index < 0 || index >= cards.Count) return;
-
-            GameObject removeCard = _cardObjectsList[index].gameObject;
-            cards.RemoveAt(index);
-            _cardObjectsList.RemoveAt(index);
-            removeCard.transform.SetParent(null);
-            ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, removeCard);
-            for (int i = 0; i < cards.Count; i++)
-            {
-                if (playerRole == Role.Player)
-                {
-                    DisplayCard displayCard = _cardObjectsList[i];
-                    displayCard.RemoveEvent();
-                    displayCard.OnCardClicked += () => HandleCardClick(displayCard.gameObject, i);
-                }
-            }
-            UpdateHands();
-        }
-
+        #region Split Functionality
         public Hands Split()
         {
+            if (!IsPair()) return null;
+
             GameObject splitHandsObj = Instantiate(BlackjackController.Instance.playerHandsPrefab);
             Hands newHands = splitHandsObj.GetComponent<Hands>();
             splitHandsObj.transform.position = transform.position - new Vector3(2.5f, 0);
@@ -212,73 +387,33 @@ namespace CardGame
             return newHands;
         }
 
-        public bool IsPair()
+        private void DropCard(int index)
         {
-            return cards.Count == 2 && cards[0].rank == cards[1].rank;
-        }
+            if (index < 0 || index >= cards.Count) return;
 
-        private void UpdateHands()
-        {
-            for (int i = 0; i < _cardObjectsList.Count; i++)
+            GameObject removeCard = displayCards[index].gameObject;
+            cards.RemoveAt(index);
+            displayCards.RemoveAt(index);
+
+            if (removeCard != null)
             {
-                DisplayCard card = _cardObjectsList[i];
-                Transform child = card.transform;
-                SpriteRenderer spriteRenderer = child.GetComponent<SpriteRenderer>();
+                ObjectPool.Instance.ReturnObject(CardSpriteReference.Instance.cardPrefab, removeCard);
+            }
 
-                child.localPosition = new Vector3((i - _cardObjectsList.Count / 2f) * spacing, 0f, 0f);
-                spriteRenderer.sortingOrder = i * 2;
-
-                if (_hideFirstCard && i == 0 || hideCards)
+            // Update event handlers for remaining cards
+            for (int i = 0; i < cards.Count; i++)
+            {
+                var displayCard = displayCards[i];
+                if (playerRole == Role.Player)
                 {
-                    card.HideCard();
-                }
-                else
-                {
-                    card.ShowCard();
+                    int capturedIndex = i;
+                    displayCard.RemoveEvent();
+                    displayCard.OnCardClicked += () => HandleCardClick(displayCard.gameObject, capturedIndex);
                 }
             }
-            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
-        }
 
-        public void ResetSelectedCard(bool moveBack = true)
-        {
-            if (_isAnimating || _selectedCardIndex < 0 || _selectedCardIndex >= _cardObjectsList.Count) return;
-
-            Transform selectedCard = _cardObjectsList[_selectedCardIndex].transform;
-            if (moveBack)
-            {
-                _isAnimating = true;
-                selectedCard.DOLocalMoveY(selectedCard.localPosition.y - 0.5f, 0.5f).OnComplete(() =>
-                {
-                    _isAnimating = false;
-                    _uiController.DisableReplaceButton();
-                });
-            }
-            _selectedCardIndex = -1;
+            UpdateHandsLayout(true);
         }
-
-        public void SetHands(List<Card> cards)
-        {
-            this.cards = cards;
-            UpdateHands();
-        }
-
-        public void ResetExtraPoints()
-        {
-            extraPoints = 0;
-            UpdateHands();
-        }
-
-        public void AddExtraPoints(int value)
-        {
-            extraPoints += value;
-            UpdateHands();
-        }
-
-        public void ReduceExtraPoints(int value)
-        {
-            extraPoints -= value;
-            UpdateHands();
-        }
+        #endregion
     }
 }
