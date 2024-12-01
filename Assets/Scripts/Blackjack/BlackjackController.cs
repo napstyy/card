@@ -118,6 +118,7 @@ namespace CardGame
             }
 
             OnRoundStateChanged?.Invoke(roundState);
+            GetRandomRules();
         }
         #endregion
 
