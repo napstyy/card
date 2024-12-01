@@ -31,7 +31,7 @@ public class OptionUIManager : MonoBehaviour
         refreshRateDropdown.onValueChanged.AddListener(SetRefreshRate); // Add this line
         resolutions = Screen.resolutions;
 
-        if (refreshRateDropdown.options.Count == 0) 
+        if (refreshRateDropdown.options.Count == 0)
         {
             PopulateRefreshRateDropdown();
             totalNumberOfRefreshRates = refreshRateDropdown.options.Count;
@@ -94,13 +94,14 @@ public class OptionUIManager : MonoBehaviour
     void SetResolution(int resolutionIndex)
     {
         Resolution resolution = resolutions[resolutionIndex * totalNumberOfRefreshRates + currentRefreshRateIndex];
-        Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreenMode);
+        RefreshRate refreshRate = resolution.refreshRateRatio;
+        Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreenMode, refreshRate);
         PopulateRefreshRateDropdown(); // Refresh the refresh rate dropdown
     }
 
     void SetRefreshRate(int refreshRateIndex)
     {
-        int refreshRate = resolutions[currentRefreshRateIndex].refreshRate;
+        RefreshRate refreshRate = resolutions[currentRefreshRateIndex].refreshRateRatio;
         Resolution currentResolution = Screen.currentResolution;
         Screen.SetResolution(currentResolution.width, currentResolution.height, Screen.fullScreenMode, refreshRate);
     }
@@ -147,11 +148,12 @@ public class OptionUIManager : MonoBehaviour
         {
             if (resolutions[i].width == currentResolution.width && resolutions[i].height == currentResolution.height)
             {
-                string option = resolutions[i].refreshRate + " Hz";
+                int refreshRate = (int)resolutions[i].refreshRateRatio.numerator / (int)resolutions[i].refreshRateRatio.denominator;
+                string option = refreshRate + " Hz";
                 if (!options.Contains(option))
                 {
                     options.Add(option);
-                    if (resolutions[i].refreshRate == currentResolution.refreshRate)
+                    if (refreshRate == (int)currentResolution.refreshRateRatio.numerator / (int)currentResolution.refreshRateRatio.denominator)
                     {
                         currentRefreshRateIndex = options.Count - 1;
                     }
