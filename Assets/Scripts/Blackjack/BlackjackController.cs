@@ -113,6 +113,7 @@ namespace CardGame
         private PlayerStats player;
         private int bustLimit = 21;
         private bool reducePointsByHalf;
+        private bool saveMoney;
         #endregion
 
         #region Unity Methods
@@ -122,6 +123,7 @@ namespace CardGame
             roundState = RoundState.End;
             deck = new Deck(4);
             player = GameManager.Instance.PlayerStats;
+            player.OnItemRemoved += UseItem;
 
             // Initialize playerHands if not already initialized
             if (playerHands == null || playerHands.Count == 0)
@@ -164,9 +166,13 @@ namespace CardGame
         public void StartOfRound()
         {
             if (playerHands.Count == 0) return;
-
+            if(player == null){
+                player = GameManager.Instance.PlayerStats;
+                player.OnItemRemoved += UseItem;
+            }
             isSplit = false;
             isDoubleDown = false;
+            saveMoney = false;
             bustLimit = 21;
 
             playerHands[0].InitializeHands();
@@ -180,6 +186,29 @@ namespace CardGame
             DealInitialCards();
             roundState = RoundState.Start;
             OnRoundStateChanged?.Invoke(roundState);
+        }
+
+        private void UseItem(int obj)
+        {
+            switch(obj)
+            {
+                case 0:
+                    if (
+                    gameManager.CurrentState != GameManager.GameState.Betting)
+                    return;
+
+                playerHands[0].chips += player.ownedChips * 10;
+                player.RemoveChips(player.ownedChips);
+                gameManager.SetGameState(GameManager.GameState.Playing);
+                AudioManager.Instance?.PlaySFX(betChips);
+                break;
+                case 1:
+                    dealerHands.ShowHands();
+                break;
+                case 2:
+                    saveMoney = true;
+                break;
+            }
         }
 
         private void DealInitialCards()
@@ -522,6 +551,11 @@ namespace CardGame
                     winAmount = hands.chips;
                     player.AddChips(winAmount);
                 }
+            }
+            else if(saveMoney)
+            {
+                player.AddChips(hands.chips);
+                saveMoney = false;
             }
 
             hands.chips = 0;
