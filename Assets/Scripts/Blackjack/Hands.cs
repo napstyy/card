@@ -15,7 +15,7 @@ namespace CardGame
         #region Events and Delegates
         // Make this public so other hands can access it
         public static event Action OnCardSelectionChanged;
-        public event Action<int> OnHandsUpdate;
+        public event Action<int,int> OnHandsUpdate;
         #endregion
 
         #region Public Fields and Properties
@@ -129,7 +129,7 @@ namespace CardGame
             selectedCardIndex = -1;
             cards.Clear();
             displayCards.Clear();
-            OnHandsUpdate?.Invoke(-1);
+            OnHandsUpdate?.Invoke(-1,extraPoints);
         }
         #endregion
 
@@ -138,21 +138,21 @@ namespace CardGame
         {
             extraPoints = 0;
             UpdateHandsLayout(true);
-            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this),extraPoints);
         }
 
         public void AddExtraPoints(int value)
         {
             extraPoints += value;
             UpdateHandsLayout(true);
-            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this),extraPoints);
         }
 
         public void ReduceExtraPoints(int value)
         {
             extraPoints -= value;
             UpdateHandsLayout(true);
-            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this),extraPoints);
         }
         public void AddCardToHands(Card card)
         {
@@ -214,7 +214,7 @@ namespace CardGame
                     {
                         displayCard.ShowCard();
                     }
-                    OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+                    OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this),extraPoints);
                 });
         }
 
@@ -299,7 +299,7 @@ namespace CardGame
                 }
             }
 
-            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this));
+            OnHandsUpdate?.Invoke(BlackjackController.Instance.CountPoints(this),extraPoints);
         }
         #endregion
 

@@ -84,6 +84,7 @@ namespace CardGame
         public Hands selectedHands;
         public RoundState roundState { get; private set; }
         public bool AllowSplit { get { return playerHands[0].IsPair() && !isSplit && !isDoubleDown; } }
+        public int RoundBurstLimit {get {return bustLimit;}}
 
         [Header("Secret Rules")]
         public SecretRule[] rules;
@@ -152,6 +153,7 @@ namespace CardGame
 
             isSplit = false;
             isDoubleDown = false;
+            bustLimit = 21;
 
             playerHands[0].InitializeHands();
             dealerHands.InitializeHands();
@@ -168,12 +170,10 @@ namespace CardGame
 
         private void DealInitialCards()
         {
-            // playerHands[0].AddCardToHands(deck.DrawCard());
+            playerHands[0].AddCardToHands(deck.DrawCard());
             dealerHands.AddCardToHands(deck.DrawCard());
-            // playerHands[0].AddCardToHands(deck.DrawCard());
+            playerHands[0].AddCardToHands(deck.DrawCard());
             dealerHands.AddCardToHands(deck.DrawCard());
-            playerHands[0].AddCardToHands(new Card(Card.Ranks.Eight, Card.Suits.Clubs, false));
-            playerHands[0].AddCardToHands(new Card(Card.Ranks.Eight, Card.Suits.Clubs, false));
         }
         #endregion
 
@@ -237,6 +237,7 @@ namespace CardGame
 
         private void AddRightSideCardPoints(Hands hands, Card card)
         {
+            if(hands.playerRole != Hands.Role.Player)return;
             int index = hands.cards.IndexOf(card);
             if (index + 1 < hands.cards.Count)
             {
@@ -247,6 +248,7 @@ namespace CardGame
 
         private void AdjustPointsBySuit(Hands hands, Card card, bool add)
         {
+            if(hands.playerRole != Hands.Role.Player)return;
             int count = hands.cards.Count(c => c.suit == card.suit);
             if (add)
                 hands.AddExtraPoints(count);
@@ -471,6 +473,7 @@ namespace CardGame
                 dealerHands.AddCardToHands(deck.DrawCard());
                 dealerPoints = CountPoints(dealerHands);
             }
+            TriggerHoldEffect(dealerHands, out float bonus);
         }
 
         private void ResolveHands(Hands hands)
@@ -478,10 +481,10 @@ namespace CardGame
             TriggerHoldEffect(hands, out float bonus);
             int playerPoints = CountPoints(hands);
             int dealerPoints = CountPoints(dealerHands);
-            if (playerPoints <= 21)
+            if (playerPoints <= bustLimit)
             {
                 int winAmount;
-                if (dealerPoints > 21 || playerPoints > dealerPoints)
+                if (dealerPoints > bustLimit || playerPoints > dealerPoints)
                 {
                     int multiplier = (playerPoints == 21 && hands.cards.Count == 2) ? 3 : 2;
                     winAmount = hands.chips * multiplier * (int)bonus;

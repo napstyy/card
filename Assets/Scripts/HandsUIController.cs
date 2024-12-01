@@ -9,6 +9,8 @@ public class HandsUIController : MonoBehaviour
     [SerializeField] Button hitButton;
     [SerializeField] Image background;
     [SerializeField] TextMeshProUGUI pointsText;
+    [SerializeField] GameObject pointsTextHolder;
+
 
     Hands hands;
 
@@ -17,9 +19,26 @@ public class HandsUIController : MonoBehaviour
         hands = transform.root.GetComponent<Hands>();
         hitButton.onClick.AddListener(() => BlackjackController.Instance.Hit(hands));
         GetComponent<Canvas>().worldCamera = Camera.main;
-        hands.OnHandsUpdate += (int points) =>
+        hands.OnHandsUpdate += (int points, int extraPoints) =>
         {
+            
             pointsText.SetText(points == -1 ? "" : points.ToString());
+            // Change text color based on extraPoints value
+            if (extraPoints > 0)
+            {
+                // Set text color to green if extraPoints is positive
+                pointsText.color = Color.green; 
+            }
+            else if (extraPoints < 0)
+            {
+                // Set text color to red if extraPoints is negative
+                pointsText.color = new Color(1f, 0.4f, 0f);;
+            }
+            else
+            {
+                // Set text color to a neutral color if extraPoints is zero
+                pointsText.color = Color.white; 
+            }
         };
     }
 
@@ -29,11 +48,13 @@ public class HandsUIController : MonoBehaviour
         {
             DisableHitButton();
             DisableBackground();
+            pointsTextHolder.SetActive(false);
         }
         else if (GameManager.Instance.CurrentState == GameManager.GameState.Playing)
         {
             EnableHitButton();
             EnableBackground();
+            pointsTextHolder.SetActive(true);
         }
     }
 
