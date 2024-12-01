@@ -13,8 +13,9 @@ namespace CardGame
     public class Hands : MonoBehaviour
     {
         #region Events and Delegates
-        protected static event Action UpdateSelectedCards;
-        public event Action<int> OnHandsUpdate;  // Required by HandsUIController
+        // Make this public so other hands can access it
+        public static event Action OnCardSelectionChanged;
+        public event Action<int> OnHandsUpdate;
         #endregion
 
         #region Public Fields and Properties
@@ -46,7 +47,6 @@ namespace CardGame
         private Vector3 basePosition;
         private Sequence currentAnimation;
         #endregion
-
         #region Enums
         public enum Role
         {
@@ -60,7 +60,6 @@ namespace CardGame
         private bool _hideFirstCard;
         private bool _isAnimating;
         private UIController _uiController;
-        private Action _updateSelectedCardsHandler;
 
         #region Unity Lifecycle
         private void Start()
@@ -72,8 +71,18 @@ namespace CardGame
 
         private void OnDestroy()
         {
+            // Unsubscribe from the global card selection event
+            OnCardSelectionChanged -= HandleGlobalCardSelection;
             CleanupEventHandlers();
             currentAnimation?.Kill();
+        }
+        private void HandleGlobalCardSelection()
+        {
+            // If this hand isn't the currently selected one, deselect any selected card
+            if (BlackjackController.Instance.selectedHands != this && selectedCardIndex >= 0)
+            {
+                DeselectCard(displayCards[selectedCardIndex].gameObject, false); // false means don't trigger global event
+            }
         }
         #endregion
 
@@ -87,18 +96,14 @@ namespace CardGame
 
         private void SetupEventHandlers()
         {
-            UpdateSelectedCards += () =>
-            {
-                if (BlackjackController.Instance.selectedHands != this && selectedCardIndex >= 0)
-                {
-                    DeselectCard(displayCards[selectedCardIndex].gameObject);
-                }
-            };
+            // Subscribe to the global card selection event
+            OnCardSelectionChanged += HandleGlobalCardSelection;
         }
+
 
         private void CleanupEventHandlers()
         {
-            UpdateSelectedCards = null;
+            OnCardSelectionChanged -= HandleGlobalCardSelection;  // Change from UpdateSelectedCards
             foreach (var displayCard in displayCards)
             {
                 if (displayCard != null)
@@ -157,6 +162,8 @@ namespace CardGame
 
             // Setup card
             displayCard.Instantiate(card);
+
+            // Only add click handlers to player cards
             if (playerRole == Role.Player)
             {
                 int newCardIndex = cards.Count;
@@ -298,64 +305,141 @@ namespace CardGame
         #region Card Interaction
         private void HandleCardClick(GameObject cardObject, int index)
         {
-            if (isAnimating || GameManager.Instance.CurrentState != GameManager.GameState.Preparation)
+            // Only allow card selection during Playing state and when not animating
+            if (isAnimating || GameManager.Instance.CurrentState != GameManager.GameState.Playing)
                 return;
 
-            if (_isAnimating) return;
+            // Don't allow dealer's cards to be selected
+            if (playerRole == Role.Dealer)
+                return;
+
+            // Don't allow selection if it's the dealer's turn
+            if (BlackjackController.Instance.roundState == BlackjackController.RoundState.End)
+                return;
 
             if (selectedCardIndex == index)
             {
                 AudioManager.Instance.PlaySFX(cardSlide2);
-                DeselectCard(cardObject);
+                DeselectCard(cardObject, true);
             }
             else
             {
                 AudioManager.Instance.PlaySFX(cardSlide1);
                 SelectCard(cardObject, index);
             }
-
-            UpdateSelectedCards?.Invoke();
         }
 
         private void SelectCard(GameObject cardObject, int index)
         {
-            if (selectedCardIndex >= 0 && BlackjackController.Instance.selectedHands == this)
+            // Step 1: Handle any previously selected card first
+            bool isSameCard = (BlackjackController.Instance.selectedHands == this && selectedCardIndex == index);
+            if (isSameCard)
             {
-                DeselectCard(displayCards[selectedCardIndex].gameObject);
+                // If clicking the same card, just deselect it
+                DeselectCard(cardObject, true);
+                return;
             }
 
+            // Step 2: Create a sequence for smooth animation
+            Sequence sequence = DOTween.Sequence();
+
+            // Step 3: If there's any card selected anywhere, lower it first
+            if (BlackjackController.Instance.selectedHands != null)
+            {
+                if (BlackjackController.Instance.selectedHands != this)
+                {
+                    // Different hand - tell it to deselect its card without triggering events
+                    sequence.AppendCallback(() =>
+                    {
+                        BlackjackController.Instance.selectedHands.ResetSelectedCard(true);
+                    });
+                }
+                else if (selectedCardIndex >= 0)
+                {
+                    // Same hand, different card - animate current card down first
+                    sequence.Append(displayCards[selectedCardIndex].transform
+                        .DOLocalMoveY(playerYPosition, animationDuration)
+                        .SetEase(Ease.InOutQuad));
+                }
+            }
+
+            // Step 4: Update selection state
             BlackjackController.Instance.selectedHands = this;
             selectedCardIndex = index;
 
-            // Animate card selection
-            currentAnimation?.Kill();
-            currentAnimation = DOTween.Sequence()
-                .Append(cardObject.transform.DOMove(
-                    cardObject.transform.position + Vector3.up * selectionOffset,
-                    animationDuration
-                ).SetEase(Ease.OutQuad));
+            // Step 5: Animate new card up
+            sequence.Append(cardObject.transform
+                .DOLocalMoveY(playerYPosition + selectionOffset, animationDuration)
+                .SetEase(Ease.OutQuad));
 
-            uiController.EnableReplaceButton();
+            // Step 6: Play sequence and update UI
+            currentAnimation?.Kill();
+            currentAnimation = sequence;
+            sequence.Play();
+
+            // Step 7: Update UI elements
+            if (GameManager.Instance.Progress.HasSwapsRemaining())
+            {
+                uiController.EnableReplaceButton();
+            }
+
+            // Step 8: Notify other hands after animation is complete
+            sequence.OnComplete(() =>
+            {
+                OnCardSelectionChanged?.Invoke();
+            });
         }
 
-        private void DeselectCard(GameObject cardObject)
+        private void DeselectCard(GameObject cardObject, bool triggerGlobalEvent)
         {
-            selectedCardIndex = -1;
-            UpdateHandsLayout(true);
-            uiController.DisableReplaceButton();
+            if (cardObject == null) return;
+
+            // Create deselection animation
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(cardObject.transform
+                .DOLocalMoveY(playerYPosition, animationDuration)
+                .SetEase(Ease.InQuad));
+
+            // Update state after animation
+            sequence.OnComplete(() =>
+            {
+                selectedCardIndex = -1;
+                if (BlackjackController.Instance.selectedHands == this)
+                {
+                    BlackjackController.Instance.selectedHands = null;
+                }
+
+                if (triggerGlobalEvent)
+                {
+                    OnCardSelectionChanged?.Invoke();
+                }
+
+                uiController.DisableReplaceButton();
+            });
+
+            currentAnimation?.Kill();
+            currentAnimation = sequence;
+            sequence.Play();
         }
 
         public void ResetSelectedCard(bool moveBack = true)
         {
-            if (selectedCardIndex < 0 || selectedCardIndex >= displayCards.Count)
-                return;
-
-            if (moveBack)
+            if (selectedCardIndex >= 0 && selectedCardIndex < displayCards.Count)
             {
-                DeselectCard(displayCards[selectedCardIndex].gameObject);
+                if (moveBack)
+                {
+                    DeselectCard(displayCards[selectedCardIndex].gameObject, true);
+                }
+                else
+                {
+                    selectedCardIndex = -1;
+                    if (BlackjackController.Instance.selectedHands == this)
+                    {
+                        BlackjackController.Instance.selectedHands = null;
+                    }
+                }
             }
 
-            selectedCardIndex = -1;
         }
         #endregion
 
