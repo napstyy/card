@@ -22,6 +22,9 @@ public class UIController : MonoBehaviour
     [SerializeField] Button confirmBetsButton;
     [SerializeField] Button resetBetsButton;
 
+    [Header("Shop")]
+    [SerializeField] GameObject shopWindow;
+
     [Header("Others")]
     [SerializeField] Button confirmButton;
     [SerializeField] Button startGameButton;
@@ -64,10 +67,12 @@ public class UIController : MonoBehaviour
                 betsButtons.SetActive(false);
                 actionButtons.SetActive(false);
                 confirmButton.gameObject.SetActive(false);
+                shopWindow.SetActive(false);
             break;
             case GameManager.GameState.Betting:
                 betsButtons.SetActive(true);
                 actionButtons.SetActive(false);
+                shopWindow.SetActive(false);
             break;
             case GameManager.GameState.Playing:
                 betsButtons.SetActive(false);
@@ -77,6 +82,7 @@ public class UIController : MonoBehaviour
                 betsButtons.SetActive(false);
                 actionButtons.SetActive(false);
                 confirmButton.gameObject.SetActive(false);
+                shopWindow.SetActive(true);
             break;
             case GameManager.GameState.RoundEnd:
 
