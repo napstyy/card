@@ -26,6 +26,8 @@ public class UIController : MonoBehaviour
     [SerializeField] GameObject shopWindow;
 
     [Header("Others")]
+    [SerializeField] GameObject shopHeader;
+    [SerializeField] GameObject normalHeader;
     [SerializeField] Button confirmButton;
     [SerializeField] TextMeshProUGUI targetMoneyText;
     [SerializeField] TextMeshProUGUI remainingRoundsText;
@@ -83,11 +85,15 @@ public class UIController : MonoBehaviour
             case GameManager.GameState.Preparation:
                 betsButtons.SetActive(false);
                 actionButtons.SetActive(false);
+                shopHeader.SetActive(false);
+                normalHeader.SetActive(true);
                 confirmButton.gameObject.SetActive(false);
                 shopWindow.SetActive(false);
             break;
             case GameManager.GameState.Betting:
                 betsButtons.SetActive(true);
+                shopHeader.SetActive(false);
+                normalHeader.SetActive(true);
                 actionButtons.SetActive(false);
                 shopWindow.SetActive(false);
             break;
@@ -96,6 +102,8 @@ public class UIController : MonoBehaviour
                 actionButtons.SetActive(true);
             break;
             case GameManager.GameState.Shopping:
+                shopHeader.SetActive(true);
+                normalHeader.SetActive(false);
                 betsButtons.SetActive(false);
                 actionButtons.SetActive(false);
                 confirmButton.gameObject.SetActive(false);
