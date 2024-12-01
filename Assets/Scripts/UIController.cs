@@ -18,6 +18,8 @@ public class UIController : MonoBehaviour
     [Header("Bet and Chips")]
     [SerializeField] TextMeshProUGUI chipsText;
     [SerializeField] TextMeshProUGUI betsText;
+    [SerializeField] TextMeshProUGUI burstLimitText;
+    [SerializeField] TextMeshProUGUI replaceText;
     [SerializeField] GameObject betsButtons;
     [SerializeField] Button confirmBetsButton;
     [SerializeField] Button resetBetsButton;
@@ -62,6 +64,8 @@ public class UIController : MonoBehaviour
 
     private void Update() {
         remainingRoundsText.SetText($"{GameManager.Instance.CurrentRound}/{GameManager.Instance.MaxRounds}");
+        burstLimitText.SetText(BlackjackController.Instance.RoundBurstLimit.ToString());
+        replaceText.SetText(GameManager.Instance.Swaps.ToString());
     }
 
     private void RoundStateChangedHandler(BlackjackController.RoundState state)

@@ -105,6 +105,7 @@ namespace CardGame
         public int CurrentRound => Progress.CurrentRound;
         public int MaxRounds => Progress.MaxRounds;
         public int TargetMoney => targetMoney;
+        public int Swaps => Progress.CurrentSwapsRemaining;
 
         // Events
         public event Action<GameState> OnGameStateChanged;
