@@ -167,10 +167,12 @@ namespace CardGame
 
         private void DealInitialCards()
         {
-            playerHands[0].AddCardToHands(deck.DrawCard());
+            // playerHands[0].AddCardToHands(deck.DrawCard());
             dealerHands.AddCardToHands(deck.DrawCard());
-            playerHands[0].AddCardToHands(deck.DrawCard());
+            // playerHands[0].AddCardToHands(deck.DrawCard());
             dealerHands.AddCardToHands(deck.DrawCard());
+            playerHands[0].AddCardToHands(new Card(Card.Ranks.Eight, Card.Suits.Clubs, false));
+            playerHands[0].AddCardToHands(new Card(Card.Ranks.Eight, Card.Suits.Clubs, false));
         }
         #endregion
 
