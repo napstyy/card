@@ -36,6 +36,8 @@ namespace CardGame
         public int chips;
         public int extraPoints;
         public bool hideCards;
+
+        public Card[] CardsArray => cards.ToArray();
         #endregion
 
         #region Private Fields
@@ -181,6 +183,8 @@ namespace CardGame
 
             // Animate card entry
             AnimateCardEntry(cardObject, displayCard);
+
+            DebugPrintCardsArray();
         }
 
         private void AnimateCardEntry(GameObject cardObject, DisplayCard displayCard)
@@ -488,6 +492,17 @@ namespace CardGame
 
             UpdateHandsLayout(true);
         }
+
+        public void DebugPrintCardsArray()
+        {
+            // we bring the newly added array here
+            Card[] cardArray = CardsArray;
+
+            // make a string thats just the card rank so we can clearly read the enemy cards from the debug
+            string output = string.Join(", ", cardArray.Select(card => card.rank.ToString()).ToArray());
+            Debug.Log("Cards Array: " + output);
+        }
+
         #endregion
     }
 }
